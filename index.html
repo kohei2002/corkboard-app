@@ -4,13 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
   <title>Corkboard App</title>
+  
+  <!-- PWA & iOS 設定 -->
+  <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Corkboard">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/889/889647.png">
+
   <!-- 手書き風フォント -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Yomogi&display=swap" rel="stylesheet">
+  
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -25,14 +31,13 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       user-select: none;
       overflow: hidden;
-      /* iPhoneのノッチ・ホームバー対応 */
-      padding-top: env(safe-area-inset-top, 8px);
-      padding-bottom: env(safe-area-inset-bottom, 8px);
+      padding-top: env(safe-area-inset-top, 4px);
+      padding-bottom: env(safe-area-inset-bottom, 4px);
       padding-left: env(safe-area-inset-left, 8px);
       padding-right: env(safe-area-inset-right, 8px);
     }
 
-    /* --- 縦向き時の回転案内オーバーレイ --- */
+    /* 縦向き時の案内画面 */
     #orientation-warning {
       display: none;
       position: fixed;
@@ -50,19 +55,12 @@
       padding: 24px;
     }
     #orientation-warning .icon {
-      font-size: 48px;
-      margin-bottom: 16px;
+      font-size: 44px;
+      margin-bottom: 12px;
       animation: rotate-hint 1.8s infinite ease-in-out;
     }
-    #orientation-warning h2 {
-      font-size: 18px;
-      margin-bottom: 8px;
-      letter-spacing: 0.5px;
-    }
-    #orientation-warning p {
-      font-size: 13px;
-      color: #aaa;
-    }
+    #orientation-warning h2 { font-size: 17px; margin-bottom: 6px; }
+    #orientation-warning p { font-size: 13px; color: #aaa; }
 
     @keyframes rotate-hint {
       0% { transform: rotate(0deg); }
@@ -70,23 +68,20 @@
       100% { transform: rotate(-90deg); }
     }
 
-    /* 端末が縦向きの場合は案内を表示 */
     @media screen and (orientation: portrait) {
       #orientation-warning { display: flex; }
     }
 
-    /* --- シート切り替えタブバー --- */
+    /* タブバー */
     #tab-bar {
       display: flex;
-      gap: 6px;
+      gap: 5px;
       align-items: flex-end;
       width: 100%;
-      max-width: 96vw;
-      padding-left: 12px;
+      padding-left: 8px;
       z-index: 100;
       overflow-x: auto;
       white-space: nowrap;
-      -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
     }
     #tab-bar::-webkit-scrollbar { display: none; }
@@ -94,9 +89,9 @@
     .board-tab {
       background: #382e25;
       color: #b39b87;
-      padding: 6px 14px;
+      padding: 5px 12px;
       border-radius: 6px 6px 0 0;
-      font-size: 12px;
+      font-size: 11px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
@@ -109,7 +104,7 @@
       background: #4d3321;
       color: #fff;
       font-weight: bold;
-      padding-top: 8px;
+      padding-top: 7px;
     }
 
     .tab-close {
@@ -127,31 +122,30 @@
       background: transparent;
       color: #8c7562;
       border: 1px dashed #4d3321;
-      padding: 5px 10px;
+      padding: 4px 8px;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 11px;
       flex-shrink: 0;
       margin-bottom: 2px;
     }
 
-    /* --- ウッドフレーム（横長フルサイズ） --- */
+    /* ウッドフレーム */
     #board-frame {
       position: relative;
       width: 100%;
-      max-width: 96vw;
-      height: calc(100vh - 85px);
-      border-radius: 0 6px 10px 10px;
-      border: 14px solid #4d3321;
+      flex-grow: 1;
+      border-radius: 0 6px 8px 8px;
+      border: 10px solid #4d3321;
       box-shadow: 
-        inset 0 0 12px rgba(0,0,0,0.8),
-        inset 0 0 25px rgba(0,0,0,0.6),
-        0 10px 25px rgba(0,0,0,0.6);
+        inset 0 0 10px rgba(0,0,0,0.8),
+        inset 0 0 20px rgba(0,0,0,0.6),
+        0 8px 20px rgba(0,0,0,0.6);
       overflow: hidden;
       display: flex;
     }
 
-    /* コルクボードの盤面 */
+    /* コルク盤面 */
     #board-surface {
       position: relative;
       width: 100%;
@@ -162,9 +156,9 @@
         radial-gradient(#8f5e2e 12%, transparent 13%),
         radial-gradient(#deb37a 10%, transparent 12%),
         radial-gradient(#704620 15%, transparent 16%);
-      background-size: 100% 100%, 18px 18px, 24px 24px, 32px 32px;
-      background-position: 0 0, 0 0, 9px 9px, 16px 16px;
-      box-shadow: inset 4px 4px 18px rgba(0,0,0,0.55);
+      background-size: 100% 100%, 16px 16px, 22px 22px, 30px 30px;
+      background-position: 0 0, 0 0, 8px 8px, 15px 15px;
+      box-shadow: inset 4px 4px 16px rgba(0,0,0,0.55);
       cursor: default;
     }
 
@@ -175,10 +169,10 @@
       width: 100%;
       height: 100%;
       background: rgba(10, 8, 7, 0.72);
-      backdrop-filter: blur(5px);
+      backdrop-filter: blur(4px);
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.35s ease;
+      transition: opacity 0.3s ease;
       z-index: 50000;
     }
     #inspect-backdrop.active {
@@ -187,16 +181,18 @@
       cursor: zoom-out;
     }
 
-    /* --- 下部ツールバー --- */
+    /* ツールバー（コンパクト化） */
     #toolbar {
       position: absolute;
-      bottom: 10px;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
       display: flex;
-      gap: 10px;
-      background: rgba(20, 18, 16, 0.9);
-      padding: 6px 16px;
-      border-radius: 30px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+      gap: 8px;
+      background: rgba(20, 18, 16, 0.92);
+      padding: 5px 14px;
+      border-radius: 24px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(8px);
       z-index: 40000;
       align-items: center;
@@ -206,28 +202,28 @@
       background: #38322e;
       color: #eaeaea;
       border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 5px 12px;
-      border-radius: 16px;
-      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 14px;
+      font-size: 11px;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
     }
 
     .sticky-color-group {
       display: flex;
-      gap: 6px;
+      gap: 5px;
       border-left: 1px solid rgba(255,255,255,0.2);
-      padding-left: 10px;
+      padding-left: 8px;
       align-items: center;
     }
-    .sticky-label { color: #bbb; font-size: 11px; }
+    .sticky-label { color: #bbb; font-size: 10px; }
     .sticky-btn {
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       border-radius: 4px;
-      border: 1.5px solid rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.7);
       cursor: pointer;
     }
     .sticky-btn-yellow { background-color: #fff59d; }
@@ -235,46 +231,44 @@
     .sticky-btn-blue   { background-color: #b3e5fc; }
     .sticky-btn-green  { background-color: #c8e6c9; }
 
-    /* --- 写真カード --- */
+    /* 写真カード（横画面スマホに最適化したスリム幅 135px） */
     .photo-card {
       position: absolute;
-      width: 170px;
-      padding: 8px 8px 10px 8px;
+      width: 135px;
+      padding: 6px 6px 8px 6px;
       background: #fdfdfd;
       border-radius: 2px;
       cursor: grab;
       touch-action: none;
-      box-shadow: 3px 6px 16px rgba(0, 0, 0, 0.38);
+      box-shadow: 2px 5px 14px rgba(0, 0, 0, 0.35);
       display: flex;
       flex-direction: column;
     }
 
     .photo-card:hover, .sticky-note:hover {
-      box-shadow: 4px 8px 22px rgba(0, 0, 0, 0.45);
+      box-shadow: 3px 7px 18px rgba(0, 0, 0, 0.45);
       z-index: 9000 !important;
     }
 
     .photo-card.dragging, .sticky-note.dragging {
       cursor: grabbing;
-      box-shadow: 12px 24px 35px rgba(0, 0, 0, 0.45);
+      box-shadow: 10px 20px 30px rgba(0, 0, 0, 0.45);
     }
 
+    /* 拡大表示 */
     .photo-card.inspected {
       position: fixed !important;
       top: 50% !important;
       left: 50% !important;
       transform: translate(-50%, -50%) rotate(0deg) scale(1) !important;
-      width: min(70vw, 360px) !important;
+      width: min(75vw, 320px) !important;
       z-index: 60000 !important;
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75) !important;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8) !important;
       cursor: zoom-out !important;
-      transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.15);
+      transition: all 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.15);
     }
 
-    .photo-card.inspected .pin {
-      transform: translate(-50%, -20px) scale(1.2);
-      opacity: 0;
-    }
+    .photo-card.inspected .pin { transform: translate(-50%, -18px) scale(1.2); opacity: 0; }
     .photo-card.inspected .card-ctrl { display: none !important; }
 
     .photo-img-wrapper {
@@ -285,7 +279,7 @@
     .photo-card img {
       width: 100%;
       height: auto;
-      max-height: 380px;
+      max-height: 260px;
       object-fit: cover;
       display: block;
       pointer-events: none;
@@ -293,34 +287,34 @@
 
     .caption-textarea {
       width: 100%;
-      margin-top: 6px;
+      margin-top: 5px;
       border: none;
       background: transparent;
       outline: none;
       resize: none;
       font-family: 'Yomogi', cursive, sans-serif;
-      font-size: 14px;
-      line-height: 1.35;
+      font-size: 13px;
+      line-height: 1.3;
       color: #2b2b2b;
       text-align: center;
       cursor: text;
-      padding: 3px;
-      min-height: 28px;
+      padding: 2px;
+      min-height: 24px;
       overflow: hidden;
     }
     .caption-textarea:focus { background: rgba(0, 0, 0, 0.04); border-radius: 2px; }
-    .caption-textarea::placeholder { color: #b0b0b0; font-size: 12px; }
+    .caption-textarea::placeholder { color: #b0b0b0; font-size: 11px; }
 
-    /* --- 付箋 --- */
+    /* 付箋（スリム化 125px） */
     .sticky-note {
       position: absolute;
-      width: 150px;
-      min-height: 140px;
-      padding: 20px 10px 10px 10px;
+      width: 125px;
+      min-height: 115px;
+      padding: 16px 8px 8px 8px;
       border-radius: 2px;
       cursor: grab;
       touch-action: none;
-      box-shadow: 2px 8px 18px rgba(0, 0, 0, 0.3);
+      box-shadow: 2px 6px 14px rgba(0, 0, 0, 0.3);
       display: flex;
       flex-direction: column;
     }
@@ -338,51 +332,51 @@
       outline: none;
       resize: none;
       font-family: 'Yomogi', cursive, sans-serif;
-      font-size: 15px;
-      line-height: 1.35;
+      font-size: 13px;
+      line-height: 1.3;
       color: #333;
       cursor: text;
     }
-    .sticky-textarea::placeholder { color: rgba(0, 0, 0, 0.35); }
+    .sticky-textarea::placeholder { color: rgba(0, 0, 0, 0.35); font-size: 11px; }
 
     /* コントロール */
     .card-ctrl {
       position: absolute;
-      width: 22px;
-      height: 22px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
       display: flex;
       justify-content: center;
       align-items: center;
       color: white;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: bold;
       opacity: 0;
       transition: opacity 0.2s;
       cursor: pointer;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.35);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.35);
       z-index: 20;
     }
 
     .photo-card:hover .card-ctrl,
     .sticky-note:hover .card-ctrl { opacity: 1; }
 
-    .ctrl-delete { top: -8px; right: -8px; background-color: #ef5350; }
+    .ctrl-delete { top: -7px; right: -7px; background-color: #ef5350; }
     .ctrl-delete::before { content: '×'; }
 
-    .ctrl-rotate { bottom: -8px; right: -8px; background-color: #42a5f5; cursor: nesw-resize; }
+    .ctrl-rotate { bottom: -7px; right: -7px; background-color: #42a5f5; cursor: nesw-resize; }
     .ctrl-rotate::before { content: '↻'; }
 
-    .ctrl-resize { bottom: -8px; left: -8px; background-color: #66bb6a; cursor: nwse-resize; }
-    .ctrl-resize::before { content: '⤢'; font-size: 11px; }
+    .ctrl-resize { bottom: -7px; left: -7px; background-color: #66bb6a; cursor: nwse-resize; }
+    .ctrl-resize::before { content: '⤢'; font-size: 10px; }
 
     @keyframes pin-out {
       0% { transform: translate(0, 0) rotate(var(--r)); opacity: 1; }
-      100% { transform: translate(0, 25px) rotate(var(--r)); opacity: 0; }
+      100% { transform: translate(0, 20px) rotate(var(--r)); opacity: 0; }
     }
-    .removing { pointer-events: none; animation: pin-out 0.25s ease-in forwards; }
+    .removing { pointer-events: none; animation: pin-out 0.22s ease-in forwards; }
 
-    /* ピンUI */
+    /* ピン */
     .pin {
       position: absolute;
       top: 3px;
@@ -393,26 +387,26 @@
       pointer-events: none;
       transition: transform 0.2s ease-out, opacity 0.2s;
     }
-    .pin-round { width: 13px; height: 13px; box-shadow: 1px 3px 5px rgba(0, 0, 0, 0.6); }
+    .pin-round { width: 12px; height: 12px; box-shadow: 1px 2px 4px rgba(0, 0, 0, 0.6); }
     .pin-red { background: radial-gradient(circle at 35% 35%, #ff5252, #a81212); }
     .pin-cyan { background: radial-gradient(circle at 35% 35%, #00e5ff, #00838f); }
     .pin-yellow { background: radial-gradient(circle at 35% 35%, #ffeb3b, #f57f17); }
     .pin-green { background: radial-gradient(circle at 35% 35%, #69f0ae, #1b5e20); }
-    .pin-metal { width: 15px; height: 15px; box-shadow: 1px 2px 4px rgba(0, 0, 0, 0.7); }
+    .pin-metal { width: 13px; height: 13px; box-shadow: 1px 2px 4px rgba(0, 0, 0, 0.7); }
     .pin-silver { background: radial-gradient(circle at 40% 40%, #ffffff 0%, #b0bec5 50%, #455a64 100%); }
     .pin-gold { background: radial-gradient(circle at 40% 40%, #fff9c4 0%, #d4af37 55%, #6b4d1b 100%); }
   </style>
 </head>
 <body>
 
-  <!-- 縦向き警告オーバーレイ -->
+  <!-- 縦向き警告 -->
   <div id="orientation-warning">
     <div class="icon">📱 ➔ 🔄</div>
     <h2>画面を横向きにしてください</h2>
     <p>コルクボードを広々とお使いいただくため、端末を横向きに回転させてください。</p>
   </div>
 
-  <!-- シート切り替えタブバー -->
+  <!-- タブバー -->
   <div id="tab-bar">
     <button id="btn-add-tab" title="新しいシートを追加">＋ 新規</button>
   </div>
@@ -422,7 +416,7 @@
     <div id="inspect-backdrop"></div>
   </div>
 
-  <!-- 下部ツールバー -->
+  <!-- ツールバー -->
   <div id="toolbar">
     <button class="tool-btn" id="btn-add-photo">📷 写真追加</button>
     <div class="sticky-color-group">
@@ -621,7 +615,7 @@
       'pin-metal pin-silver', 'pin-metal pin-gold'
     ];
     function getRandomPin() { return pinStyles[Math.floor(Math.random() * pinStyles.length)]; }
-    function getRandomRotation() { return (Math.random() * 14 - 7).toFixed(1); }
+    function getRandomRotation() { return (Math.random() * 12 - 6).toFixed(1); }
 
     function updateTransform(el, scale = 1) {
       const rot = el.dataset.rotation;
@@ -640,10 +634,10 @@
       card.dataset.id = data.id || ('p_' + Date.now() + Math.random());
       card.dataset.rotation = data.rotation;
       card.dataset.pinClass = data.pinClass;
-      card.dataset.originalWidth = data.width || 170;
+      card.dataset.originalWidth = data.width || 135;
       card.style.left = `${data.left}px`;
       card.style.top = `${data.top}px`;
-      card.style.width = `${data.width || 170}px`;
+      card.style.width = `${data.width || 135}px`;
       card.style.zIndex = data.zIndex || ++highestZIndex;
       updateTransform(card);
 
@@ -655,7 +649,7 @@
         <div class="photo-img-wrapper">
           <img src="${data.imgSrc}" alt="photo">
         </div>
-        <textarea class="caption-textarea" placeholder="コメントを入力..." rows="1">${data.caption || ''}</textarea>
+        <textarea class="caption-textarea" placeholder="コメント..." rows="1">${data.caption || ''}</textarea>
       `;
 
       surface.appendChild(card);
@@ -694,7 +688,7 @@
       playPinSound();
       const card = currentlyInspectedCard;
       card.classList.remove('inspected');
-      card.style.width = card.dataset.originalWidth || '170px';
+      card.style.width = card.dataset.originalWidth || '135px';
       updateTransform(card);
       backdrop.classList.remove('active');
       currentlyInspectedCard = null;
@@ -721,7 +715,7 @@
         <div class="card-ctrl ctrl-delete" title="削除"></div>
         <div class="card-ctrl ctrl-rotate" title="回転"></div>
         <div class="card-ctrl ctrl-resize" title="大きさ変更"></div>
-        <textarea class="sticky-textarea" placeholder="メモを入力...">${data.text || ''}</textarea>
+        <textarea class="sticky-textarea" placeholder="メモ...">${data.text || ''}</textarea>
       `;
 
       surface.appendChild(note);
@@ -741,7 +735,7 @@
       const file = e.target.files[0];
       if (file) {
         const rect = surface.getBoundingClientRect();
-        addPhoto(file, rect.width / 2 - 85, rect.height / 2 - 90);
+        addPhoto(file, rect.width / 2 - 68, rect.height / 2 - 75);
       }
     });
 
@@ -751,7 +745,7 @@
       const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
       const rect = surface.getBoundingClientRect();
       files.forEach((file, index) => {
-        addPhoto(file, e.clientX - rect.left - 85 + (index * 20), e.clientY - rect.top - 90 + (index * 20));
+        addPhoto(file, e.clientX - rect.left - 68 + (index * 16), e.clientY - rect.top - 75 + (index * 16));
       });
     });
 
@@ -762,7 +756,7 @@
         createPhotoElement({
           left: Math.max(10, x),
           top: Math.max(10, y),
-          width: 170,
+          width: 135,
           rotation: getRandomRotation(),
           pinClass: getRandomPin(),
           imgSrc: event.target.result,
@@ -779,10 +773,10 @@
         const rect = surface.getBoundingClientRect();
         const note = createNoteElement({
           noteColor: btn.dataset.color,
-          left: rect.width / 2 - 75 + (Math.random() * 30 - 15),
-          top: rect.height / 2 - 70 + (Math.random() * 30 - 15),
-          width: 150,
-          height: 140,
+          left: rect.width / 2 - 62 + (Math.random() * 24 - 12),
+          top: rect.height / 2 - 58 + (Math.random() * 24 - 12),
+          width: 125,
+          height: 115,
           rotation: getRandomRotation(),
           pinClass: getRandomPin(),
           text: ''
@@ -806,7 +800,7 @@
         setTimeout(() => {
           el.remove();
           saveCurrentBoardData();
-        }, 250);
+        }, 220);
       });
 
       el.querySelectorAll('textarea').forEach(input => {
@@ -863,12 +857,12 @@
           updateTransform(el);
         } else if (isResizing) {
           const deltaX = startX - pageX;
-          const newWidth = Math.min(480, Math.max(120, initWidth + deltaX));
+          const newWidth = Math.min(380, Math.max(100, initWidth + deltaX));
           el.style.width = `${newWidth}px`;
 
           if (el.classList.contains('sticky-note')) {
             const deltaY = pageY - startY;
-            const newHeight = Math.min(480, Math.max(110, initHeight + deltaY));
+            const newHeight = Math.min(380, Math.max(90, initHeight + deltaY));
             el.style.height = `${newHeight}px`;
           }
         } else if (isDragging) {
