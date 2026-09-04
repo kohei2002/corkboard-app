@@ -5,16 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0">
   <title>Corkboard App</title>
   
-  <!-- PWA & 完全縦向き固定設定 -->
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Corkboard">
-  <meta name="screen-orientation" content="portrait">
-  <meta name="x5-orientation" content="portrait">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/889/889647.png">
 
-  <!-- フォント -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Yomogi&display=swap" rel="stylesheet">
@@ -38,7 +34,6 @@
       position: fixed;
     }
 
-    /* 縦向き専用ラッパー */
     #app-container {
       width: 100vw;
       height: 100vh;
@@ -53,18 +48,6 @@
       position: absolute;
       top: 0;
       left: 0;
-    }
-
-    /* スマホが物理的に横に倒された場合：逆回転させて縦画面の比率・表示を強制維持 */
-    @media screen and (orientation: landscape) {
-      #app-container {
-        width: 100vh !important;
-        height: 100vw !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) rotate(-90deg) !important;
-        transform-origin: center center;
-      }
     }
 
     /* タブバー */
@@ -168,11 +151,11 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(10, 8, 7, 0.72);
-      backdrop-filter: blur(4px);
+      background: rgba(10, 8, 7, 0.76);
+      backdrop-filter: blur(5px);
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.3s ease;
+      transition: opacity 0.25s ease;
       z-index: 50000;
     }
     #inspect-backdrop.active {
@@ -181,7 +164,7 @@
       cursor: zoom-out;
     }
 
-    /* ツールバー（ピル型スマートデザイン） */
+    /* ツールバー */
     #toolbar {
       position: absolute;
       bottom: 14px;
@@ -243,7 +226,7 @@
     .sticky-btn-blue   { background-color: #b3e5fc; }
     .sticky-btn-green  { background-color: #c8e6c9; }
 
-    /* 写真カード（縦画面で2枚並べやすい130px） */
+    /* 写真カード */
     .photo-card {
       position: absolute;
       width: 130px;
@@ -267,20 +250,24 @@
       box-shadow: 10px 20px 30px rgba(0, 0, 0, 0.45);
     }
 
+    /* 拡大モード：画面中央に大きく表示 */
     .photo-card.inspected {
-      position: absolute !important;
+      position: fixed !important;
       top: 50% !important;
       left: 50% !important;
       transform: translate(-50%, -50%) rotate(0deg) scale(1) !important;
-      width: min(85vw, 340px) !important;
+      width: min(88vw, 360px) !important;
       z-index: 60000 !important;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8) !important;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85) !important;
       cursor: zoom-out !important;
-      transition: all 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.15);
+      transition: all 0.26s cubic-bezier(0.18, 0.89, 0.32, 1.15);
     }
 
     .photo-card.inspected .pin { transform: translate(-50%, -18px) scale(1.2); opacity: 0; }
     .photo-card.inspected .card-ctrl { display: none !important; }
+    .photo-card.inspected .photo-img-wrapper img {
+      max-height: 60vh !important;
+    }
 
     .photo-img-wrapper {
       width: 100%;
@@ -575,7 +562,6 @@
       } catch (e) { }
     }
 
-    // 触れた瞬間に即時実行する最速タップバインド
     function bindInstantAction(el, fn) {
       let isMoved = false;
       let startX = 0, startY = 0;
@@ -812,11 +798,6 @@
       autoResizeTextarea(textarea);
       textarea.addEventListener('input', () => autoResizeTextarea(textarea));
 
-      card.addEventListener('dblclick', (e) => {
-        if (e.target.classList.contains('card-ctrl') || e.target.tagName.toLowerCase() === 'textarea') return;
-        toggleInspectPhoto(card);
-      });
-
       return card;
     }
 
@@ -884,7 +865,6 @@
     const fileInput = document.getElementById('fileInput');
     const btnAddPhoto = document.getElementById('btn-add-photo');
     
-    // 写真追加ボタン
     bindInstantAction(btnAddPhoto, () => {
       fileInput.click();
     });
@@ -951,6 +931,7 @@
       let isRotating = false;
       let isResizing = false;
       let startX, startY, initLeft, initTop, initWidth, initHeight, initRot, centerX, centerY, startAngle;
+      let movedTotal = 0; // ドラッグ移動量の積算
 
       bindInstantAction(el.querySelector('.ctrl-delete'), (e) => {
         e.stopPropagation();
@@ -969,13 +950,19 @@
       });
 
       const onStart = (e) => {
-        if (el.classList.contains('inspected')) return;
         const target = e.target;
         if (target.tagName.toLowerCase() === 'textarea') return;
+
+        // 拡大中の写真をタップした場合は即座に閉じる
+        if (el.classList.contains('inspected')) {
+          closeInspect();
+          return;
+        }
 
         el.style.zIndex = ++highestZIndex;
         const pageX = e.touches ? e.touches[0].pageX : e.pageX;
         const pageY = e.touches ? e.touches[0].pageY : e.pageY;
+        movedTotal = 0;
 
         if (target.classList.contains('ctrl-rotate')) {
           isRotating = true;
@@ -994,12 +981,10 @@
           initHeight = el.offsetHeight;
         } else {
           isDragging = true;
-          el.classList.add('dragging');
           startX = pageX;
           startY = pageY;
           initLeft = el.offsetLeft;
           initTop = el.offsetTop;
-          updateTransform(el, 1.04);
         }
       };
 
@@ -1007,6 +992,9 @@
         if (el.classList.contains('inspected')) return;
         const pageX = e.touches ? e.touches[0].pageX : e.pageX;
         const pageY = e.touches ? e.touches[0].pageY : e.pageY;
+        const diffX = pageX - startX;
+        const diffY = pageY - startY;
+        movedTotal += Math.abs(diffX) + Math.abs(diffY);
 
         if (isRotating) {
           const currentAngle = Math.atan2(pageY - centerY, pageX - centerX);
@@ -1025,17 +1013,29 @@
             el.style.height = `${newHeight}px`;
           }
         } else if (isDragging) {
-          el.style.left = `${initLeft + (pageX - startX)}px`;
-          el.style.top = `${initTop + (pageY - startY)}px`;
+          // 8px以上動いた時だけドラッグ中の浮き上がり演出を付与
+          if (movedTotal > 8 && !el.classList.contains('dragging')) {
+            el.classList.add('dragging');
+            updateTransform(el, 1.04);
+          }
+          el.style.left = `${initLeft + diffX}px`;
+          el.style.top = `${initTop + diffY}px`;
         }
       };
 
-      const onEnd = () => {
+      const onEnd = (e) => {
         if (isDragging) {
-          playPinSound();
-          el.classList.remove('dragging');
-          updateTransform(el, 1);
-          saveCurrentBoardData();
+          if (el.classList.contains('dragging')) {
+            playPinSound();
+            el.classList.remove('dragging');
+            updateTransform(el, 1);
+            saveCurrentBoardData();
+          } else {
+            // 移動量がほぼ無い（8px未満）タップの場合：写真なら即座に拡大表示
+            if (movedTotal < 8 && el.classList.contains('photo-card')) {
+              toggleInspectPhoto(el);
+            }
+          }
         }
         if (isRotating || isResizing) saveCurrentBoardData();
         isDragging = false;
