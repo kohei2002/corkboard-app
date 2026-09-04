@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0">
   <title>Corkboard App</title>
   
   <link rel="manifest" href="manifest.json">
@@ -20,7 +20,8 @@
       box-sizing: border-box; 
       margin: 0; 
       padding: 0; 
-      -webkit-tap-highlight-color: transparent; /* タップ時の青い枠線を消去 */
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation; /* PWAのダブルタップ遅延を完全無効化 */
     }
 
     html, body {
@@ -29,6 +30,7 @@
       background-color: #1a1715;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       user-select: none;
+      -webkit-user-select: none;
       overflow: hidden;
     }
 
@@ -86,7 +88,6 @@
       border: 1px solid #4d3321;
       border-bottom: none;
       flex-shrink: 0;
-      touch-action: manipulation;
     }
     .board-tab.active {
       background: #4d3321;
@@ -99,8 +100,8 @@
       font-size: 11px;
       opacity: 0.6;
       border-radius: 50%;
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -116,7 +117,6 @@
       font-size: 11px;
       flex-shrink: 0;
       margin-bottom: 2px;
-      touch-action: manipulation;
     }
 
     /* ウッドフレーム */
@@ -185,21 +185,19 @@
       backdrop-filter: blur(8px);
       z-index: 40000;
       align-items: center;
-      touch-action: manipulation;
     }
 
     .tool-btn {
       background: #38322e;
       color: #eaeaea;
       border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 6px 12px;
+      padding: 6px 14px;
       border-radius: 14px;
       font-size: 12px;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 4px;
-      touch-action: manipulation;
     }
     .tool-btn:active { background: #504640; }
 
@@ -217,9 +215,8 @@
       border-radius: 4px;
       border: 1px solid rgba(255, 255, 255, 0.7);
       cursor: pointer;
-      touch-action: manipulation;
     }
-    .sticky-btn:active { transform: scale(0.92); }
+    .sticky-btn:active { transform: scale(0.9); }
     .sticky-btn-yellow { background-color: #fff59d; }
     .sticky-btn-pink   { background-color: #ffcdd2; }
     .sticky-btn-blue   { background-color: #b3e5fc; }
@@ -335,14 +332,14 @@
     /* コントロール */
     .card-ctrl {
       position: absolute;
-      width: 22px;
-      height: 22px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       display: flex;
       justify-content: center;
       align-items: center;
       color: white;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: bold;
       opacity: 0;
       transition: opacity 0.2s;
@@ -354,14 +351,14 @@
     .photo-card:hover .card-ctrl,
     .sticky-note:hover .card-ctrl { opacity: 1; }
 
-    .ctrl-delete { top: -7px; right: -7px; background-color: #ef5350; }
+    .ctrl-delete { top: -8px; right: -8px; background-color: #ef5350; }
     .ctrl-delete::before { content: '×'; }
 
-    .ctrl-rotate { bottom: -7px; right: -7px; background-color: #42a5f5; cursor: nesw-resize; }
+    .ctrl-rotate { bottom: -8px; right: -8px; background-color: #42a5f5; }
     .ctrl-rotate::before { content: '↻'; }
 
-    .ctrl-resize { bottom: -7px; left: -7px; background-color: #66bb6a; cursor: nwse-resize; }
-    .ctrl-resize::before { content: '⤢'; font-size: 10px; }
+    .ctrl-resize { bottom: -8px; left: -8px; background-color: #66bb6a; }
+    .ctrl-resize::before { content: '⤢'; font-size: 11px; }
 
     @keyframes pin-out {
       0% { transform: translate(0, 0) rotate(var(--r)); opacity: 1; }
@@ -389,7 +386,7 @@
     .pin-silver { background: radial-gradient(circle at 40% 40%, #ffffff 0%, #b0bec5 50%, #455a64 100%); }
     .pin-gold { background: radial-gradient(circle at 40% 40%, #fff9c4 0%, #d4af37 55%, #6b4d1b 100%); }
 
-    /* モーダル（app-container内部で連動回転） */
+    /* モーダル */
     .modal-overlay {
       position: absolute;
       top: 0;
@@ -419,14 +416,13 @@
       background: #e65100;
       color: #fff;
       border: none;
-      padding: 8px 16px;
+      padding: 9px 16px;
       border-radius: 20px;
       font-size: 12px;
       font-weight: bold;
       cursor: pointer;
       width: 100%;
       margin-bottom: 8px;
-      touch-action: manipulation;
     }
     .modal-btn-close {
       background: transparent;
@@ -434,8 +430,7 @@
       color: #aaa;
       font-size: 11px;
       cursor: pointer;
-      padding: 4px;
-      touch-action: manipulation;
+      padding: 6px;
     }
     .pin-input {
       letter-spacing: 12px;
@@ -455,7 +450,6 @@
 <body>
 
   <div id="app-container">
-    <!-- タブバー -->
     <div id="tab-bar">
       <button id="btn-add-tab" title="新しいシートを追加">＋ 新規</button>
     </div>
@@ -465,7 +459,6 @@
       <div id="inspect-backdrop"></div>
     </div>
 
-    <!-- ツールバー -->
     <div id="toolbar">
       <button class="tool-btn" id="btn-add-photo">📷 写真追加</button>
       <div class="sticky-color-group">
@@ -477,7 +470,6 @@
       </div>
     </div>
 
-    <!-- Pro版案内モーダル（コンテナ内に格納して正方向回転） -->
     <div class="modal-overlay" id="pro-modal">
       <div class="modal-card">
         <h3>✨ Pro版限定機能</h3>
@@ -487,7 +479,6 @@
       </div>
     </div>
 
-    <!-- パスコード入力モーダル（コンテナ内に格納して正方向回転） -->
     <div class="modal-overlay" id="passcode-modal">
       <div class="modal-card">
         <h3>🔒 シークレットロック</h3>
@@ -502,64 +493,71 @@
   <input type="file" id="fileInput" accept="image/*" style="display: none;">
 
   <script>
-    function triggerHaptic() {
-      if (navigator.vibrate) navigator.vibrate(15);
-    }
-
+    // iOS PWAでのオーディオ遅延・ブロッキングを完全防止
     let audioCtx = null;
-    function ensureAudio() {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioClass) audioCtx = new AudioClass();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
     }
 
     function playPinSound() {
-      triggerHaptic();
       try {
-        ensureAudio();
-        const t = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
+        const ctx = getAudioContext();
+        if (!ctx || ctx.state !== 'running') return;
+        const t = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(800, t);
         osc.frequency.exponentialRampToValueAtTime(120, t + 0.04);
-        gain.gain.setValueAtTime(0.35, t);
+        gain.gain.setValueAtTime(0.3, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
         osc.connect(gain);
-        gain.connect(audioCtx.destination);
+        gain.connect(ctx.destination);
         osc.start(t);
         osc.stop(t + 0.04);
-
-        const thud = audioCtx.createOscillator();
-        const thudGain = audioCtx.createGain();
-        thud.type = 'sine';
-        thud.frequency.setValueAtTime(220, t);
-        thud.frequency.exponentialRampToValueAtTime(40, t + 0.06);
-        thudGain.gain.setValueAtTime(0.4, t);
-        thudGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
-        thud.connect(thudGain);
-        thudGain.connect(audioCtx.destination);
-        thud.start(t);
-        thud.stop(t + 0.06);
       } catch (e) { }
     }
 
     function playUnpinSound() {
-      triggerHaptic();
       try {
-        ensureAudio();
-        const t = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
+        const ctx = getAudioContext();
+        if (!ctx || ctx.state !== 'running') return;
+        const t = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(320, t);
         osc.frequency.exponentialRampToValueAtTime(950, t + 0.06);
-        gain.gain.setValueAtTime(0.25, t);
+        gain.gain.setValueAtTime(0.2, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
         osc.connect(gain);
-        gain.connect(audioCtx.destination);
+        gain.connect(ctx.destination);
         osc.start(t);
         osc.stop(t + 0.06);
       } catch (e) { }
+    }
+
+    // タップイベントを遅延なく実行するヘルパー
+    function bindInstantClick(element, handler) {
+      let moved = false;
+      element.addEventListener('touchstart', () => { moved = false; }, { passive: true });
+      element.addEventListener('touchmove', () => { moved = true; }, { passive: true });
+      element.addEventListener('touchend', (e) => {
+        if (!moved) {
+          e.preventDefault();
+          handler(e);
+        }
+      });
+      element.addEventListener('click', (e) => {
+        handler(e);
+      });
     }
 
     const DB_NAME = 'CorkboardAppDB';
@@ -643,7 +641,7 @@
           ${boards.length > 1 ? `<span class="tab-close" title="シートを削除">×</span>` : ''}
         `;
 
-        const selectTabHandler = (e) => {
+        bindInstantClick(tab, (e) => {
           if (e.target.classList.contains('tab-close')) {
             e.stopPropagation();
             if (confirm(`「${b.title}」を削除しますか？`)) deleteBoard(b.id);
@@ -659,9 +657,8 @@
               switchBoard(b.id);
             }
           }
-        };
+        });
 
-        tab.addEventListener('click', selectTabHandler);
         tabBar.insertBefore(tab, document.getElementById('btn-add-tab'));
       });
     }
@@ -674,7 +671,7 @@
       setTimeout(() => input.focus(), 150);
     }
 
-    document.getElementById('btn-unlock').addEventListener('click', () => {
+    bindInstantClick(document.getElementById('btn-unlock'), () => {
       const pin = document.getElementById('passcode-input').value;
       if (pin === '1234') {
         document.getElementById('passcode-modal').style.display = 'none';
@@ -688,12 +685,12 @@
       }
     });
 
-    document.getElementById('btn-cancel-unlock').addEventListener('click', () => {
+    bindInstantClick(document.getElementById('btn-cancel-unlock'), () => {
       document.getElementById('passcode-modal').style.display = 'none';
       pendingBoardId = null;
     });
 
-    document.getElementById('btn-close-pro').addEventListener('click', () => {
+    bindInstantClick(document.getElementById('btn-close-pro'), () => {
       document.getElementById('pro-modal').style.display = 'none';
     });
 
@@ -713,7 +710,7 @@
       switchBoard(boards[0].id);
     }
 
-    document.getElementById('btn-add-tab').addEventListener('click', () => {
+    bindInstantClick(document.getElementById('btn-add-tab'), () => {
       if (boards.length >= 3) {
         document.getElementById('pro-modal').style.display = 'flex';
         return;
@@ -813,7 +810,7 @@
       currentlyInspectedCard = null;
     }
 
-    backdrop.addEventListener('click', closeInspect);
+    bindInstantClick(backdrop, closeInspect);
 
     function createNoteElement(data) {
       const note = document.createElement('div');
@@ -850,13 +847,10 @@
     const fileInput = document.getElementById('fileInput');
     const btnAddPhoto = document.getElementById('btn-add-photo');
     
-    // タッチ・クリック両方で遅延なく即反応させる
-    const triggerFilePicker = (e) => {
-      e.preventDefault();
-      ensureAudio();
+    // 写真選択トリガー（iOS PWAで確実に即座発火させる）
+    bindInstantClick(btnAddPhoto, () => {
       fileInput.click();
-    };
-    btnAddPhoto.addEventListener('click', triggerFilePicker);
+    });
 
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -896,8 +890,7 @@
     }
 
     document.querySelectorAll('.sticky-btn').forEach(btn => {
-      const addStickyHandler = (e) => {
-        e.preventDefault();
+      bindInstantClick(btn, () => {
         playPinSound();
         const rect = surface.getBoundingClientRect();
         const note = createNoteElement({
@@ -913,8 +906,7 @@
         saveCurrentBoardData();
         const textarea = note.querySelector('.sticky-textarea');
         setTimeout(() => textarea.focus(), 50);
-      };
-      btn.addEventListener('click', addStickyHandler);
+      });
     });
 
     function setupCardInteraction(el) {
@@ -923,7 +915,7 @@
       let isResizing = false;
       let startX, startY, initLeft, initTop, initWidth, initHeight, initRot, centerX, centerY, startAngle;
 
-      el.querySelector('.ctrl-delete').addEventListener('click', (e) => {
+      bindInstantClick(el.querySelector('.ctrl-delete'), (e) => {
         e.stopPropagation();
         playPinSound();
         el.classList.add('removing');
@@ -934,8 +926,8 @@
       });
 
       el.querySelectorAll('textarea').forEach(input => {
-        input.addEventListener('mousedown', (e) => e.stopPropagation());
         input.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+        input.addEventListener('mousedown', (e) => e.stopPropagation());
         input.addEventListener('input', () => saveCurrentBoardData());
       });
 
