@@ -21,7 +21,6 @@
       margin: 0; 
       padding: 0; 
       -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
     }
 
     html, body {
@@ -35,32 +34,18 @@
       position: fixed;
     }
 
-    /* アプリ全体ラッパー（横画面基準） */
+    /* アプリ全体ラッパー：回転を廃止し画面いっぱいに自然展開 */
     #app-container {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
       align-items: center;
-      padding: env(safe-area-inset-top, 4px) env(safe-area-inset-right, 8px) env(safe-area-inset-bottom, 4px) env(safe-area-inset-left, 8px);
-      transform-origin: center center;
-    }
-
-    /* 縦持ち時は90度回転＋画面幅に収まるよう自動スケールダウン（見切れ防止） */
-    @media screen and (orientation: portrait) {
-      #app-container {
-        /* 横持ち時のアスペクト比を保ったまま中央に回転配置 */
-        width: 100vh !important;
-        height: 100vw !important;
-        top: 50% !important;
-        left: 50% !important;
-        /* 幅(100vh)が縦画面の幅(100vw)に収まる比率で縮小 */
-        transform: translate(-50%, -50%) rotate(90deg) scale(calc(100vw / 100vh)) !important;
-      }
+      padding-top: env(safe-area-inset-top, 6px);
+      padding-right: env(safe-area-inset-right, 8px);
+      padding-bottom: env(safe-area-inset-bottom, 8px);
+      padding-left: env(safe-area-inset-left, 8px);
     }
 
     /* タブバー */
@@ -69,21 +54,22 @@
       gap: 6px;
       align-items: flex-end;
       width: 100%;
-      padding-left: 10px;
+      padding: 0 4px;
       z-index: 100;
       overflow-x: auto;
       white-space: nowrap;
       scrollbar-width: none;
       -webkit-overflow-scrolling: touch;
+      flex-shrink: 0;
     }
     #tab-bar::-webkit-scrollbar { display: none; }
 
     .board-tab {
       background: #382e25;
       color: #b39b87;
-      padding: 7px 18px;
+      padding: 8px 16px;
       border-radius: 7px 7px 0 0;
-      font-size: 12px;
+      font-size: 13px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
@@ -91,20 +77,16 @@
       border: 1px solid #4d3321;
       border-bottom: none;
       flex-shrink: 0;
-      touch-action: manipulation;
-    }
-    .board-tab:active {
-      background: #4a3a2d;
     }
     .board-tab.active {
       background: #4d3321;
       color: #fff;
       font-weight: bold;
-      padding-top: 9px;
+      padding-top: 10px;
     }
 
     .tab-close {
-      font-size: 13px;
+      font-size: 14px;
       opacity: 0.6;
       border-radius: 50%;
       width: 18px;
@@ -113,23 +95,21 @@
       align-items: center;
       justify-content: center;
       margin-left: 2px;
-      padding: 2px;
     }
 
     #btn-add-tab {
       background: transparent;
       color: #8c7562;
       border: 1px dashed #4d3321;
-      padding: 6px 12px;
+      padding: 7px 12px;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 13px;
       flex-shrink: 0;
       margin-bottom: 2px;
-      touch-action: manipulation;
     }
 
-    /* コルクフレーム */
+    /* コルクフレーム：画面全体にジャストフィット */
     #board-frame {
       position: relative;
       width: 100%;
@@ -182,14 +162,14 @@
     /* ツールバー */
     #toolbar {
       position: absolute;
-      bottom: 8px;
+      bottom: 12px;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
-      gap: 8px;
+      gap: 10px;
       background: rgba(20, 18, 16, 0.94);
-      padding: 5px 14px;
-      border-radius: 24px;
+      padding: 7px 16px;
+      border-radius: 26px;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(8px);
       z-index: 40000;
@@ -200,9 +180,9 @@
       background: #38322e;
       color: #eaeaea;
       border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 6px 14px;
-      border-radius: 14px;
-      font-size: 12px;
+      padding: 7px 14px;
+      border-radius: 16px;
+      font-size: 13px;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -212,12 +192,12 @@
 
     .sticky-color-group {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       border-left: 1px solid rgba(255,255,255,0.2);
-      padding-left: 8px;
+      padding-left: 10px;
       align-items: center;
     }
-    .sticky-label { color: #bbb; font-size: 10px; }
+    .sticky-label { color: #bbb; font-size: 11px; }
     .sticky-btn {
       width: 22px;
       height: 22px;
@@ -260,7 +240,7 @@
       top: 50% !important;
       left: 50% !important;
       transform: translate(-50%, -50%) rotate(0deg) scale(1) !important;
-      width: min(75vw, 320px) !important;
+      width: min(80vw, 340px) !important;
       z-index: 60000 !important;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8) !important;
       cursor: zoom-out !important;
@@ -375,6 +355,7 @@
     }
     .removing { pointer-events: none; animation: pin-out 0.22s ease-in forwards; }
 
+    /* ピン */
     .pin {
       position: absolute;
       top: 3px;
@@ -396,7 +377,7 @@
 
     /* モーダル */
     .modal-overlay {
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
       width: 100%;
@@ -412,21 +393,21 @@
       background: #2b2520;
       border: 1px solid #5a3d28;
       border-radius: 12px;
-      padding: 16px 20px;
-      width: 270px;
+      padding: 18px 24px;
+      width: 280px;
       text-align: center;
       color: #f0f0f0;
       box-shadow: 0 10px 30px rgba(0,0,0,0.8);
     }
-    .modal-card h3 { font-size: 15px; margin-bottom: 6px; }
-    .modal-card p { font-size: 12px; color: #bbb; margin-bottom: 12px; line-height: 1.4; }
+    .modal-card h3 { font-size: 16px; margin-bottom: 8px; }
+    .modal-card p { font-size: 13px; color: #bbb; margin-bottom: 14px; line-height: 1.4; }
     .modal-btn {
       background: #e65100;
       color: #fff;
       border: none;
-      padding: 9px 16px;
+      padding: 10px 18px;
       border-radius: 20px;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: bold;
       cursor: pointer;
       width: 100%;
@@ -436,21 +417,21 @@
       background: transparent;
       border: none;
       color: #aaa;
-      font-size: 11px;
+      font-size: 12px;
       cursor: pointer;
       padding: 6px;
     }
     .pin-input {
-      letter-spacing: 12px;
-      font-size: 20px;
-      width: 130px;
+      letter-spacing: 14px;
+      font-size: 22px;
+      width: 140px;
       text-align: center;
       background: #1a1715;
       border: 1px solid #5a3d28;
       color: #fff;
-      padding: 6px;
+      padding: 8px;
       border-radius: 6px;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       outline: none;
     }
   </style>
@@ -477,24 +458,24 @@
         <button class="sticky-btn sticky-btn-green" data-color="note-green"></button>
       </div>
     </div>
+  </div>
 
-    <div class="modal-overlay" id="pro-modal">
-      <div class="modal-card">
-        <h3>✨ Pro版限定機能</h3>
-        <p>無料版で作成できるボードは3枚までです。<br>Pro版にアップグレードすると無制限にボードを作成できます。</p>
-        <button class="modal-btn" onclick="alert('Pro版決済フロー（準備中）')">Pro版をアンロック (¥1,200)</button>
-        <button class="modal-btn-close" id="btn-close-pro">閉じる</button>
-      </div>
+  <div class="modal-overlay" id="pro-modal">
+    <div class="modal-card">
+      <h3>✨ Pro版限定機能</h3>
+      <p>無料版で作成できるボードは3枚までです。<br>Pro版にアップグレードすると無制限にボードを作成できます。</p>
+      <button class="modal-btn" onclick="alert('Pro版決済フロー（準備中）')">Pro版をアンロック (¥1,200)</button>
+      <button class="modal-btn-close" id="btn-close-pro">閉じる</button>
     </div>
+  </div>
 
-    <div class="modal-overlay" id="passcode-modal">
-      <div class="modal-card">
-        <h3>🔒 シークレットロック</h3>
-        <p>このボードを開くには4桁の暗証番号を入力してください。<br><small>(初期値: 1234)</small></p>
-        <input type="password" id="passcode-input" class="pin-input" maxlength="4" inputmode="numeric">
-        <button class="modal-btn" id="btn-unlock">解除</button>
-        <button class="modal-btn-close" id="btn-cancel-unlock">キャンセル</button>
-      </div>
+  <div class="modal-overlay" id="passcode-modal">
+    <div class="modal-card">
+      <h3>🔒 シークレットロック</h3>
+      <p>このボードを開くには4桁の暗証番号を入力してください。<br><small>(初期値: 1234)</small></p>
+      <input type="password" id="passcode-input" class="pin-input" maxlength="4" inputmode="numeric">
+      <button class="modal-btn" id="btn-unlock">解除</button>
+      <button class="modal-btn-close" id="btn-cancel-unlock">キャンセル</button>
     </div>
   </div>
 
@@ -561,31 +542,6 @@
         osc.start(t);
         osc.stop(t + 0.06);
       } catch (e) { }
-    }
-
-    // ネイティブ並みの即時反応タップ判定（iOS PWAで最も安定するポインタ方式）
-    function bindFastTap(element, callback) {
-      let moved = false;
-      let startX = 0;
-      let startY = 0;
-
-      element.addEventListener('pointerdown', (e) => {
-        moved = false;
-        startX = e.clientX;
-        startY = e.clientY;
-      });
-
-      element.addEventListener('pointermove', (e) => {
-        if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) {
-          moved = true;
-        }
-      });
-
-      element.addEventListener('pointerup', (e) => {
-        if (!moved) {
-          callback(e);
-        }
-      });
     }
 
     const DB_NAME = 'CorkboardAppDB';
@@ -669,7 +625,7 @@
           ${boards.length > 1 ? `<span class="tab-close" title="削除">×</span>` : ''}
         `;
 
-        bindFastTap(tab, (e) => {
+        tab.addEventListener('click', (e) => {
           if (e.target.classList.contains('tab-close')) {
             e.stopPropagation();
             if (confirm(`「${b.title}」を削除しますか？`)) deleteBoard(b.id);
@@ -699,7 +655,7 @@
       setTimeout(() => input.focus(), 150);
     }
 
-    bindFastTap(document.getElementById('btn-unlock'), () => {
+    document.getElementById('btn-unlock').addEventListener('click', () => {
       const pin = document.getElementById('passcode-input').value;
       if (pin === '1234') {
         document.getElementById('passcode-modal').style.display = 'none';
@@ -713,12 +669,12 @@
       }
     });
 
-    bindFastTap(document.getElementById('btn-cancel-unlock'), () => {
+    document.getElementById('btn-cancel-unlock').addEventListener('click', () => {
       document.getElementById('passcode-modal').style.display = 'none';
       pendingBoardId = null;
     });
 
-    bindFastTap(document.getElementById('btn-close-pro'), () => {
+    document.getElementById('btn-close-pro').addEventListener('click', () => {
       document.getElementById('pro-modal').style.display = 'none';
     });
 
@@ -738,7 +694,7 @@
       switchBoard(boards[0].id);
     }
 
-    bindFastTap(document.getElementById('btn-add-tab'), () => {
+    document.getElementById('btn-add-tab').addEventListener('click', () => {
       if (boards.length >= 3) {
         document.getElementById('pro-modal').style.display = 'flex';
         return;
@@ -838,7 +794,7 @@
       currentlyInspectedCard = null;
     }
 
-    bindFastTap(backdrop, closeInspect);
+    backdrop.addEventListener('click', closeInspect);
 
     function createNoteElement(data) {
       const note = document.createElement('div');
@@ -875,8 +831,7 @@
     const fileInput = document.getElementById('fileInput');
     const btnAddPhoto = document.getElementById('btn-add-photo');
     
-    // 即時ピッカー起動
-    bindFastTap(btnAddPhoto, () => {
+    btnAddPhoto.addEventListener('click', () => {
       fileInput.click();
     });
 
@@ -918,7 +873,7 @@
     }
 
     document.querySelectorAll('.sticky-btn').forEach(btn => {
-      bindFastTap(btn, () => {
+      btn.addEventListener('click', () => {
         playPinSound();
         const rect = surface.getBoundingClientRect();
         const note = createNoteElement({
@@ -943,7 +898,7 @@
       let isResizing = false;
       let startX, startY, initLeft, initTop, initWidth, initHeight, initRot, centerX, centerY, startAngle;
 
-      bindFastTap(el.querySelector('.ctrl-delete'), (e) => {
+      el.querySelector('.ctrl-delete').addEventListener('click', (e) => {
         e.stopPropagation();
         playPinSound();
         el.classList.add('removing');
