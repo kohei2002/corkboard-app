@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Corkboard">
+  <title>Corkboard App</title>
+  <!-- 手書き風フォント -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Yomogi&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      background-color: #24201d;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      user-select: none;
+      overflow: hidden;
+      padding-top: 14px;
+    }
+
+    /* --- シート切り替えタブバー --- */
+    #tab-bar {
+      display: flex;
+      gap: 6px;
+      align-items: flex-end;
+      width: 95vw;
+      padding-left: 20px;
+      z-index: 100;
+    }
+
+    .board-tab {
+      background: #3e342b;
+      color: #bfa895;
+      padding: 7px 18px;
+      border-radius: 8px 8px 0 0;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #5a3d28;
+      border-bottom: none;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .board-tab:hover { background: #4f4236; color: #fff; }
+    .board-tab.active {
+      background: #5a3d28;
+      color: #fff;
+      font-weight: bold;
+      padding-top: 9px;
+    }
+
+    .tab-close {
+      font-size: 12px;
+      opacity: 0.6;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .tab-close:hover { opacity: 1; background: rgba(0,0,0,0.3); }
+
+    #btn-add-tab {
+      background: transparent;
+      color: #998370;
+      border: 1px dashed #5a3d28;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-left: 4px;
+      margin-bottom: 2px;
+    }
+    #btn-add-tab:hover { color: #fff; border-color: #8f6e52; }
+
+    /* --- ウッドフレーム（額縁） --- */
+    #board-frame {
+      position: relative;
+      width: 95vw;
+      height: calc(100vh - 120px);
+      border-radius: 0 8px 12px 12px;
+      border: 22px solid #5a3d28;
+      box-shadow: 
+        inset 0 0 15px rgba(0,0,0,0.8),
+        inset 0 0 30px rgba(0,0,0,0.6),
+        0 15px 35px rgba(0,0,0,0.6);
+      overflow: hidden;
+      display: flex;
+    }
+
+    /* コルクボードの盤面 */
+    #board-surface {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background-color: #c99355;
+      background-image: 
+        radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0.2) 100%),
+        radial-gradient(#8f5e2e 12%, transparent 13%),
+        radial-gradient(#deb37a 10%, transparent 12%),
+        radial-gradient(#704620 15%, transparent 16%);
+      background-size: 100% 100%, 18px 18px, 24px 24px, 32px 32px;
+      background-position: 0 0, 0 0, 9px 9px, 16px 16px;
+      box-shadow: inset 5px 5px 25px rgba(0,0,0,0.6);
+      cursor: default;
+    }
+
+    /* 拡大時の暗転背景 */
+    #inspect-backdrop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(10, 8, 7, 0.72);
+      backdrop-filter: blur(5px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+      z-index: 50000;
+    }
+    #inspect-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+      cursor: zoom-out;
+    }
+
+    /* --- 下部ツールバー --- */
+    #toolbar {
+      position: absolute;
+      bottom: 16px;
+      display: flex;
+      gap: 12px;
+      background: rgba(20, 18, 16, 0.88);
+      padding: 7px 18px;
+      border-radius: 30px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(8px);
+      z-index: 40000;
+      align-items: center;
+    }
+
+    .tool-btn {
+      background: #3e3833;
+      color: #eaeaea;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 7px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+    .tool-btn:hover { background: #524b45; }
+
+    .sticky-color-group {
+      display: flex;
+      gap: 8px;
+      border-left: 1px solid rgba(255,255,255,0.2);
+      padding-left: 12px;
+      align-items: center;
+    }
+    .sticky-label { color: #bbb; font-size: 12px; }
+    .sticky-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: 2px solid rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .sticky-btn:hover { transform: scale(1.15); }
+    .sticky-btn-yellow { background-color: #fff59d; }
+    .sticky-btn-pink   { background-color: #ffcdd2; }
+    .sticky-btn-blue   { background-color: #b3e5fc; }
+    .sticky-btn-green  { background-color: #c8e6c9; }
+
+    /* --- 写真カード（ポラロイド風） --- */
+    .photo-card {
+      position: absolute;
+      width: 200px;
+      padding: 10px 10px 12px 10px;
+      background: #fdfdfd;
+      border-radius: 2px;
+      cursor: grab;
+      touch-action: none;
+      box-shadow: 3px 6px 16px rgba(0, 0, 0, 0.38);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .photo-card:hover, .sticky-note:hover {
+      box-shadow: 4px 8px 22px rgba(0, 0, 0, 0.45);
+      z-index: 9000 !important;
+    }
+
+    .photo-card.dragging, .sticky-note.dragging {
+      cursor: grabbing;
+      box-shadow: 12px 24px 35px rgba(0, 0, 0, 0.45);
+    }
+
+    /* 手前にピン外し拡大された状態 */
+    .photo-card.inspected {
+      position: fixed !important;
+      top: 50% !important;
+      left: 50% !important;
+      transform: translate(-50%, -50%) rotate(0deg) scale(1) !important;
+      width: min(82vw, 440px) !important;
+      z-index: 60000 !important;
+      box-shadow: 0 35px 70px rgba(0, 0, 0, 0.7) !important;
+      cursor: zoom-out !important;
+      transition: all 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.15);
+    }
+
+    .photo-card.inspected .pin {
+      transform: translate(-50%, -24px) scale(1.2);
+      opacity: 0;
+      transition: all 0.25s ease-out;
+    }
+
+    .photo-card.inspected .card-ctrl {
+      display: none !important;
+    }
+
+    .photo-img-wrapper {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 1px;
+    }
+
+    .photo-card img {
+      width: 100%;
+      height: auto;
+      max-height: 480px;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+    }
+
+    .caption-textarea {
+      width: 100%;
+      margin-top: 8px;
+      border: none;
+      background: transparent;
+      outline: none;
+      resize: none;
+      font-family: 'Yomogi', cursive, sans-serif;
+      font-size: 15px;
+      line-height: 1.4;
+      color: #2b2b2b;
+      text-align: center;
+      cursor: text;
+      padding: 4px;
+      min-height: 32px;
+      overflow: hidden;
+    }
+    .caption-textarea:focus { background: rgba(0, 0, 0, 0.04); border-radius: 2px; }
+    .caption-textarea::placeholder { color: #b0b0b0; font-size: 13px; }
+
+    /* --- 付箋（Sticky Note） --- */
+    .sticky-note {
+      position: absolute;
+      width: 170px;
+      min-height: 160px;
+      padding: 24px 12px 12px 12px;
+      border-radius: 2px;
+      cursor: grab;
+      touch-action: none;
+      box-shadow: 2px 8px 18px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .note-yellow { background-color: #fff9c4; border-bottom: 2px solid #fff59d; }
+    .note-pink   { background-color: #ffebee; border-bottom: 2px solid #ffcdd2; }
+    .note-blue   { background-color: #e1f5fe; border-bottom: 2px solid #b3e5fc; }
+    .note-green  { background-color: #e8f5e9; border-bottom: 2px solid #c8e6c9; }
+
+    .sticky-textarea {
+      width: 100%;
+      flex-grow: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      resize: none;
+      font-family: 'Yomogi', cursive, sans-serif;
+      font-size: 16px;
+      line-height: 1.4;
+      color: #333;
+      cursor: text;
+    }
+    .sticky-textarea::placeholder { color: rgba(0, 0, 0, 0.35); }
+
+    /* --- コントロールUI（削除・回転・リサイズ） --- */
+    .card-ctrl {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 13px;
+      font-weight: bold;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.1s;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.35);
+      z-index: 20;
+    }
+
+    .photo-card:hover .card-ctrl,
+    .sticky-note:hover .card-ctrl { opacity: 1; }
+    .card-ctrl:hover { transform: scale(1.15); }
+
+    .ctrl-delete { top: -9px; right: -9px; background-color: #ef5350; }
+    .ctrl-delete::before { content: '×'; }
+
+    .ctrl-rotate { bottom: -9px; right: -9px; background-color: #42a5f5; cursor: nesw-resize; }
+    .ctrl-rotate::before { content: '↻'; }
+
+    .ctrl-resize { bottom: -9px; left: -9px; background-color: #66bb6a; cursor: nwse-resize; }
+    .ctrl-resize::before { content: '⤢'; font-size: 11px; }
+
+    @keyframes pin-out {
+      0% { transform: translate(0, 0) rotate(var(--r)); opacity: 1; }
+      100% { transform: translate(0, 25px) rotate(var(--r)); opacity: 0; }
+    }
+    .removing { pointer-events: none; animation: pin-out 0.25s ease-in forwards; }
+
+    /* ピンUI */
+    .pin {
+      position: absolute;
+      top: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 50%;
+      z-index: 10;
+      pointer-events: none;
+      transition: transform 0.2s ease-out, opacity 0.2s;
+    }
+    .pin-round { width: 14px; height: 14px; box-shadow: 1px 3px 6px rgba(0, 0, 0, 0.6); }
+    .pin-red { background: radial-gradient(circle at 35% 35%, #ff5252, #a81212); }
+    .pin-cyan { background: radial-gradient(circle at 35% 35%, #00e5ff, #00838f); }
+    .pin-yellow { background: radial-gradient(circle at 35% 35%, #ffeb3b, #f57f17); }
+    .pin-green { background: radial-gradient(circle at 35% 35%, #69f0ae, #1b5e20); }
+    .pin-metal { width: 16px; height: 16px; box-shadow: 1px 2px 5px rgba(0, 0, 0, 0.7); }
+    .pin-silver { background: radial-gradient(circle at 40% 40%, #ffffff 0%, #b0bec5 50%, #455a64 100%); }
+    .pin-gold { background: radial-gradient(circle at 40% 40%, #fff9c4 0%, #d4af37 55%, #6b4d1b 100%); }
+  </style>
+</head>
+<body>
+
+  <!-- シート切り替えタブバー -->
+  <div id="tab-bar">
+    <button id="btn-add-tab" title="新しいシートを追加">＋ 新規ボード</button>
+  </div>
+
+  <div id="board-frame">
+    <div id="board-surface"></div>
+    <!-- 拡大時オーバーレイ背景 -->
+    <div id="inspect-backdrop"></div>
+  </div>
+
+  <!-- 下部ツールバー -->
+  <div id="toolbar">
+    <button class="tool-btn" id="btn-add-photo">📷 写真を追加</button>
+    <div class="sticky-color-group">
+      <span class="sticky-label">付箋:</span>
+      <button class="sticky-btn sticky-btn-yellow" data-color="note-yellow" title="黄色の付箋"></button>
+      <button class="sticky-btn sticky-btn-pink" data-color="note-pink" title="ピンクの付箋"></button>
+      <button class="sticky-btn sticky-btn-blue" data-color="note-blue" title="青色の付箋"></button>
+      <button class="sticky-btn sticky-btn-green" data-color="note-green" title="緑色の付箋"></button>
+    </div>
+  </div>
+
+  <input type="file" id="fileInput" accept="image/*" style="display: none;">
+
+  <script>
+    // --- 音声シンセ（ピン刺し / ピン抜き） ---
+    let audioCtx = null;
+    function ensureAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    // ピンが刺さる音（コツッ・プチッ）
+    function playPinSound() {
+      try {
+        ensureAudio();
+        const t = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(800, t);
+        osc.frequency.exponentialRampToValueAtTime(120, t + 0.04);
+        gain.gain.setValueAtTime(0.35, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(t);
+        osc.stop(t + 0.04);
+
+        const thud = audioCtx.createOscillator();
+        const thudGain = audioCtx.createGain();
+        thud.type = 'sine';
+        thud.frequency.setValueAtTime(220, t);
+        thud.frequency.exponentialRampToValueAtTime(40, t + 0.06);
+        thudGain.gain.setValueAtTime(0.4, t);
+        thudGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+        thud.connect(thudGain);
+        thudGain.connect(audioCtx.destination);
+        thud.start(t);
+        thud.stop(t + 0.06);
+      } catch (e) { }
+    }
+
+    // ピンを抜く音（シュピッ・ピュッという高めの摩擦音）
+    function playUnpinSound() {
+      try {
+        ensureAudio();
+        const t = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, t);
+        osc.frequency.exponentialRampToValueAtTime(950, t + 0.06);
+        gain.gain.setValueAtTime(0.25, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(t);
+        osc.stop(t + 0.06);
+      } catch (e) { }
+    }
+
+    // --- IndexedDB ストレージ ---
+    const DB_NAME = 'CorkboardAppDB';
+    const STORE_NAME = 'boards';
+    let db;
+
+    function initDB() {
+      return new Promise((resolve) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = (e) => { db = e.target.result; resolve(); };
+      });
+    }
+
+    function saveCurrentBoardData() {
+      if (!db || !currentBoardId) return;
+      const items = [];
+      document.querySelectorAll('.photo-card, .sticky-note').forEach(el => {
+        const item = {
+          id: el.dataset.id,
+          type: el.classList.contains('photo-card') ? 'photo' : 'note',
+          left: el.offsetLeft,
+          top: el.offsetTop,
+          width: el.offsetWidth,
+          height: el.offsetHeight,
+          rotation: el.dataset.rotation,
+          pinClass: el.dataset.pinClass,
+          zIndex: parseInt(el.style.zIndex) || 100
+        };
+        if (item.type === 'photo') {
+          item.imgSrc = el.querySelector('img').src;
+          item.caption = el.querySelector('.caption-textarea').value;
+        } else {
+          item.noteColor = el.dataset.noteColor;
+          item.text = el.querySelector('.sticky-textarea').value;
+        }
+        items.push(item);
+      });
+
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).put({
+        id: currentBoardId,
+        title: boards.find(b => b.id === currentBoardId)?.title || '無題',
+        items: items
+      });
+    }
+
+    function loadBoardData(boardId) {
+      return new Promise((resolve) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const req = tx.objectStore(STORE_NAME).get(boardId);
+        req.onsuccess = () => resolve(req.result ? req.result.items : []);
+      });
+    }
+
+    // --- シート管理 ---
+    let boards = JSON.parse(localStorage.getItem('corkboard_tabs')) || [
+      { id: 'daily', title: '📅 今日の予定' },
+      { id: 'favorite', title: '✨ お気に入り' },
+      { id: 'secret', title: '🔒 プライベート' }
+    ];
+    let currentBoardId = localStorage.getItem('corkboard_active_tab') || 'daily';
+    let highestZIndex = 100;
+    const surface = document.getElementById('board-surface');
+    const tabBar = document.getElementById('tab-bar');
+    const backdrop = document.getElementById('inspect-backdrop');
+    let currentlyInspectedCard = null;
+
+    function renderTabs() {
+      document.querySelectorAll('.board-tab').forEach(t => t.remove());
+      boards.forEach(b => {
+        const tab = document.createElement('div');
+        tab.className = `board-tab ${b.id === currentBoardId ? 'active' : ''}`;
+        tab.innerHTML = `
+          <span>${b.title}</span>
+          ${boards.length > 1 ? `<span class="tab-close" title="シートを削除">×</span>` : ''}
+        `;
+
+        tab.addEventListener('click', (e) => {
+          if (e.target.classList.contains('tab-close')) {
+            e.stopPropagation();
+            if (confirm(`「${b.title}」を削除しますか？`)) deleteBoard(b.id);
+            return;
+          }
+          if (currentBoardId !== b.id) {
+            closeInspect();
+            saveCurrentBoardData();
+            switchBoard(b.id);
+          }
+        });
+
+        tabBar.insertBefore(tab, document.getElementById('btn-add-tab'));
+      });
+    }
+
+    function switchBoard(id) {
+      currentBoardId = id;
+      localStorage.setItem('corkboard_active_tab', id);
+      renderTabs();
+      surface.innerHTML = '';
+      loadBoardData(id).then(items => items.forEach(renderItemFromData));
+    }
+
+    function deleteBoard(id) {
+      boards = boards.filter(b => b.id !== id);
+      localStorage.setItem('corkboard_tabs', JSON.stringify(boards));
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).delete(id);
+      switchBoard(boards[0].id);
+    }
+
+    document.getElementById('btn-add-tab').addEventListener('click', () => {
+      const name = prompt('新しいシート名を入力してください:', '新しいボード');
+      if (name && name.trim()) {
+        const newId = 'board_' + Date.now();
+        boards.push({ id: newId, title: name.trim() });
+        localStorage.setItem('corkboard_tabs', JSON.stringify(boards));
+        closeInspect();
+        saveCurrentBoardData();
+        switchBoard(newId);
+      }
+    });
+
+    const pinStyles = [
+      'pin-round pin-red', 'pin-round pin-cyan', 'pin-round pin-yellow', 'pin-round pin-green',
+      'pin-metal pin-silver', 'pin-metal pin-gold'
+    ];
+    function getRandomPin() { return pinStyles[Math.floor(Math.random() * pinStyles.length)]; }
+    function getRandomRotation() { return (Math.random() * 16 - 8).toFixed(1); }
+
+    function updateTransform(el, scale = 1) {
+      const rot = el.dataset.rotation;
+      el.style.transform = `rotate(${rot}deg) scale(${scale})`;
+      el.style.setProperty('--r', `${rot}deg`);
+    }
+
+    function autoResizeTextarea(textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+
+    // 写真カード描画
+    function createPhotoElement(data) {
+      const card = document.createElement('div');
+      card.className = 'photo-card';
+      card.dataset.id = data.id || ('p_' + Date.now() + Math.random());
+      card.dataset.rotation = data.rotation;
+      card.dataset.pinClass = data.pinClass;
+      card.dataset.originalWidth = data.width || 200;
+      card.style.left = `${data.left}px`;
+      card.style.top = `${data.top}px`;
+      card.style.width = `${data.width || 200}px`;
+      card.style.zIndex = data.zIndex || ++highestZIndex;
+      updateTransform(card);
+
+      card.innerHTML = `
+        <div class="pin ${data.pinClass}"></div>
+        <div class="card-ctrl ctrl-delete" title="削除"></div>
+        <div class="card-ctrl ctrl-rotate" title="回転"></div>
+        <div class="card-ctrl ctrl-resize" title="大きさ変更"></div>
+        <div class="photo-img-wrapper">
+          <img src="${data.imgSrc}" alt="photo">
+        </div>
+        <textarea class="caption-textarea" placeholder="コメントを入力..." rows="1">${data.caption || ''}</textarea>
+      `;
+
+      surface.appendChild(card);
+      setupCardInteraction(card);
+
+      const textarea = card.querySelector('.caption-textarea');
+      autoResizeTextarea(textarea);
+      textarea.addEventListener('input', () => autoResizeTextarea(textarea));
+
+      // 写真のダブルクリックで「ピン外し＆手前拡大」演出
+      card.addEventListener('dblclick', (e) => {
+        if (e.target.classList.contains('card-ctrl') || e.target.tagName.toLowerCase() === 'textarea') return;
+        toggleInspectPhoto(card);
+      });
+
+      return card;
+    }
+
+    // --- ピン外し＆拡大モードの制御 ---
+    function toggleInspectPhoto(card) {
+      if (currentlyInspectedCard === card) {
+        closeInspect();
+      } else {
+        if (currentlyInspectedCard) closeInspect();
+        openInspect(card);
+      }
+    }
+
+    function openInspect(card) {
+      playUnpinSound(); // ピンが抜ける音
+      currentlyInspectedCard = card;
+      // 元のサイズを記録
+      card.dataset.originalWidth = card.style.width;
+      card.classList.add('inspected');
+      backdrop.classList.add('active');
+    }
+
+    function closeInspect() {
+      if (!currentlyInspectedCard) return;
+      playPinSound(); // 再びピンが刺さる音
+      const card = currentlyInspectedCard;
+      card.classList.remove('inspected');
+      card.style.width = card.dataset.originalWidth || '200px';
+      updateTransform(card);
+      backdrop.classList.remove('active');
+      currentlyInspectedCard = null;
+    }
+
+    backdrop.addEventListener('click', closeInspect);
+
+    // 付箋描画
+    function createNoteElement(data) {
+      const note = document.createElement('div');
+      note.className = `sticky-note ${data.noteColor}`;
+      note.dataset.id = data.id || ('n_' + Date.now() + Math.random());
+      note.dataset.rotation = data.rotation;
+      note.dataset.noteColor = data.noteColor;
+      note.dataset.pinClass = data.pinClass;
+      note.style.left = `${data.left}px`;
+      note.style.top = `${data.top}px`;
+      if (data.width) note.style.width = `${data.width}px`;
+      if (data.height) note.style.height = `${data.height}px`;
+      note.style.zIndex = data.zIndex || ++highestZIndex;
+      updateTransform(note);
+
+      note.innerHTML = `
+        <div class="pin ${data.pinClass}"></div>
+        <div class="card-ctrl ctrl-delete" title="削除"></div>
+        <div class="card-ctrl ctrl-rotate" title="回転"></div>
+        <div class="card-ctrl ctrl-resize" title="大きさ変更"></div>
+        <textarea class="sticky-textarea" placeholder="メモを入力...">${data.text || ''}</textarea>
+      `;
+
+      surface.appendChild(note);
+      setupCardInteraction(note);
+      return note;
+    }
+
+    function renderItemFromData(item) {
+      if (item.type === 'photo') createPhotoElement(item);
+      else createNoteElement(item);
+    }
+
+    // --- 写真・付箋の新規追加 ---
+    const fileInput = document.getElementById('fileInput');
+    document.getElementById('btn-add-photo').addEventListener('click', () => fileInput.click());
+    surface.addEventListener('dblclick', (e) => {
+      if (e.target === surface) fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const rect = surface.getBoundingClientRect();
+        addPhoto(file, rect.width / 2 - 100, rect.height / 2 - 110);
+      }
+    });
+
+    surface.addEventListener('dragover', (e) => e.preventDefault());
+    surface.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+      const rect = surface.getBoundingClientRect();
+      files.forEach((file, index) => {
+        addPhoto(file, e.clientX - rect.left - 100 + (index * 24), e.clientY - rect.top - 110 + (index * 24));
+      });
+    });
+
+    function addPhoto(file, x, y) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        playPinSound();
+        createPhotoElement({
+          left: Math.max(15, x),
+          top: Math.max(15, y),
+          width: 200,
+          rotation: getRandomRotation(),
+          pinClass: getRandomPin(),
+          imgSrc: event.target.result,
+          caption: ''
+        });
+        saveCurrentBoardData();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    document.querySelectorAll('.sticky-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        playPinSound();
+        const rect = surface.getBoundingClientRect();
+        const note = createNoteElement({
+          noteColor: btn.dataset.color,
+          left: rect.width / 2 - 85 + (Math.random() * 40 - 20),
+          top: rect.height / 2 - 80 + (Math.random() * 40 - 20),
+          width: 170,
+          height: 160,
+          rotation: getRandomRotation(),
+          pinClass: getRandomPin(),
+          text: ''
+        });
+        saveCurrentBoardData();
+        const textarea = note.querySelector('.sticky-textarea');
+        setTimeout(() => textarea.focus(), 50);
+      });
+    });
+
+    // --- ドラッグ・回転・リサイズ等の操作 ---
+    function setupCardInteraction(el) {
+      let isDragging = false;
+      let isRotating = false;
+      let isResizing = false;
+      let startX, startY, initLeft, initTop, initWidth, initHeight, initRot, centerX, centerY, startAngle;
+
+      el.querySelector('.ctrl-delete').addEventListener('click', (e) => {
+        e.stopPropagation();
+        playPinSound();
+        el.classList.add('removing');
+        setTimeout(() => {
+          el.remove();
+          saveCurrentBoardData();
+        }, 250);
+      });
+
+      el.querySelectorAll('textarea').forEach(input => {
+        input.addEventListener('mousedown', (e) => e.stopPropagation());
+        input.addEventListener('touchstart', (e) => e.stopPropagation());
+        input.addEventListener('input', () => saveCurrentBoardData());
+      });
+
+      const onStart = (e) => {
+        if (el.classList.contains('inspected')) return; // 拡大表示中はドラッグ不可
+        const target = e.target;
+        if (target.tagName.toLowerCase() === 'textarea') return;
+
+        el.style.zIndex = ++highestZIndex;
+        const pageX = e.touches ? e.touches[0].pageX : e.pageX;
+        const pageY = e.touches ? e.touches[0].pageY : e.pageY;
+
+        if (target.classList.contains('ctrl-rotate')) {
+          isRotating = true;
+          e.stopPropagation();
+          const rect = el.getBoundingClientRect();
+          centerX = rect.left + rect.width / 2;
+          centerY = rect.top + rect.height / 2;
+          startAngle = Math.atan2(pageY - centerY, pageX - centerX);
+          initRot = parseFloat(el.dataset.rotation);
+        } else if (target.classList.contains('ctrl-resize')) {
+          isResizing = true;
+          e.stopPropagation();
+          startX = pageX;
+          startY = pageY;
+          initWidth = el.offsetWidth;
+          initHeight = el.offsetHeight;
+        } else {
+          isDragging = true;
+          el.classList.add('dragging');
+          startX = pageX;
+          startY = pageY;
+          initLeft = el.offsetLeft;
+          initTop = el.offsetTop;
+          updateTransform(el, 1.04);
+        }
+      };
+
+      const onMove = (e) => {
+        if (el.classList.contains('inspected')) return;
+        const pageX = e.touches ? e.touches[0].pageX : e.pageX;
+        const pageY = e.touches ? e.touches[0].pageY : e.pageY;
+
+        if (isRotating) {
+          const currentAngle = Math.atan2(pageY - centerY, pageX - centerX);
+          const angleDiff = currentAngle - startAngle;
+          const newRot = initRot + (angleDiff * (180 / Math.PI));
+          el.dataset.rotation = newRot.toFixed(1);
+          updateTransform(el);
+        } else if (isResizing) {
+          const deltaX = startX - pageX;
+          const newWidth = Math.min(550, Math.max(130, initWidth + deltaX));
+          el.style.width = `${newWidth}px`;
+
+          if (el.classList.contains('sticky-note')) {
+            const deltaY = pageY - startY;
+            const newHeight = Math.min(550, Math.max(130, initHeight + deltaY));
+            el.style.height = `${newHeight}px`;
+          }
+        } else if (isDragging) {
+          el.style.left = `${initLeft + (pageX - startX)}px`;
+          el.style.top = `${initTop + (pageY - startY)}px`;
+        }
+      };
+
+      const onEnd = () => {
+        if (isDragging) {
+          playPinSound();
+          el.classList.remove('dragging');
+          updateTransform(el, 1);
+          saveCurrentBoardData();
+        }
+        if (isRotating || isResizing) {
+          saveCurrentBoardData();
+        }
+        isDragging = false;
+        isRotating = false;
+        isResizing = false;
+      };
+
+      el.addEventListener('mousedown', onStart);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onEnd);
+
+      el.addEventListener('touchstart', onStart, { passive: true });
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('touchend', onEnd);
+    }
+
+    initDB().then(() => {
+      renderTabs();
+      switchBoard(currentBoardId);
+    });
+  </script>
+</body>
+</html>
