@@ -16,7 +16,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Yomogi&display=swap" rel="stylesheet">
   
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      -webkit-tap-highlight-color: transparent; /* タップ時の青い枠線を消去 */
+    }
 
     html, body {
       width: 100%;
@@ -42,7 +47,7 @@
       transform-origin: center center;
     }
 
-    /* 縦持ち時は全体を強制90度回転させて横長にフィットさせる */
+    /* 縦持ち時は全体を強制90度回転 */
     @media screen and (orientation: portrait) {
       #app-container {
         width: 100vh !important;
@@ -64,13 +69,14 @@
       overflow-x: auto;
       white-space: nowrap;
       scrollbar-width: none;
+      touch-action: pan-x;
     }
     #tab-bar::-webkit-scrollbar { display: none; }
 
     .board-tab {
       background: #382e25;
       color: #b39b87;
-      padding: 5px 12px;
+      padding: 6px 14px;
       border-radius: 6px 6px 0 0;
       font-size: 11px;
       cursor: pointer;
@@ -80,12 +86,13 @@
       border: 1px solid #4d3321;
       border-bottom: none;
       flex-shrink: 0;
+      touch-action: manipulation;
     }
     .board-tab.active {
       background: #4d3321;
       color: #fff;
       font-weight: bold;
-      padding-top: 7px;
+      padding-top: 8px;
     }
 
     .tab-close {
@@ -103,12 +110,13 @@
       background: transparent;
       color: #8c7562;
       border: 1px dashed #4d3321;
-      padding: 4px 8px;
+      padding: 6px 10px;
       border-radius: 6px;
       cursor: pointer;
       font-size: 11px;
       flex-shrink: 0;
       margin-bottom: 2px;
+      touch-action: manipulation;
     }
 
     /* ウッドフレーム */
@@ -177,36 +185,41 @@
       backdrop-filter: blur(8px);
       z-index: 40000;
       align-items: center;
+      touch-action: manipulation;
     }
 
     .tool-btn {
       background: #38322e;
       color: #eaeaea;
       border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 4px 10px;
+      padding: 6px 12px;
       border-radius: 14px;
-      font-size: 11px;
+      font-size: 12px;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 4px;
+      touch-action: manipulation;
     }
+    .tool-btn:active { background: #504640; }
 
     .sticky-color-group {
       display: flex;
-      gap: 5px;
+      gap: 6px;
       border-left: 1px solid rgba(255,255,255,0.2);
       padding-left: 8px;
       align-items: center;
     }
     .sticky-label { color: #bbb; font-size: 10px; }
     .sticky-btn {
-      width: 18px;
-      height: 18px;
+      width: 22px;
+      height: 22px;
       border-radius: 4px;
       border: 1px solid rgba(255, 255, 255, 0.7);
       cursor: pointer;
+      touch-action: manipulation;
     }
+    .sticky-btn:active { transform: scale(0.92); }
     .sticky-btn-yellow { background-color: #fff59d; }
     .sticky-btn-pink   { background-color: #ffcdd2; }
     .sticky-btn-blue   { background-color: #b3e5fc; }
@@ -237,7 +250,7 @@
     }
 
     .photo-card.inspected {
-      position: fixed !important;
+      position: absolute !important;
       top: 50% !important;
       left: 50% !important;
       transform: translate(-50%, -50%) rotate(0deg) scale(1) !important;
@@ -322,8 +335,8 @@
     /* コントロール */
     .card-ctrl {
       position: absolute;
-      width: 20px;
-      height: 20px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
       display: flex;
       justify-content: center;
@@ -376,9 +389,9 @@
     .pin-silver { background: radial-gradient(circle at 40% 40%, #ffffff 0%, #b0bec5 50%, #455a64 100%); }
     .pin-gold { background: radial-gradient(circle at 40% 40%, #fff9c4 0%, #d4af37 55%, #6b4d1b 100%); }
 
-    /* モーダル共通（Pro案内 ＆ 暗証番号入力） */
+    /* モーダル（app-container内部で連動回転） */
     .modal-overlay {
-      position: fixed;
+      position: absolute;
       top: 0;
       left: 0;
       width: 100%;
@@ -394,14 +407,14 @@
       background: #2b2520;
       border: 1px solid #5a3d28;
       border-radius: 12px;
-      padding: 18px 24px;
-      width: 280px;
+      padding: 16px 20px;
+      width: 270px;
       text-align: center;
       color: #f0f0f0;
       box-shadow: 0 10px 30px rgba(0,0,0,0.8);
     }
-    .modal-card h3 { font-size: 15px; margin-bottom: 8px; }
-    .modal-card p { font-size: 12px; color: #bbb; margin-bottom: 14px; line-height: 1.4; }
+    .modal-card h3 { font-size: 15px; margin-bottom: 6px; }
+    .modal-card p { font-size: 12px; color: #bbb; margin-bottom: 12px; line-height: 1.4; }
     .modal-btn {
       background: #e65100;
       color: #fff;
@@ -412,19 +425,22 @@
       font-weight: bold;
       cursor: pointer;
       width: 100%;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
+      touch-action: manipulation;
     }
     .modal-btn-close {
       background: transparent;
       border: none;
-      color: #888;
+      color: #aaa;
       font-size: 11px;
       cursor: pointer;
+      padding: 4px;
+      touch-action: manipulation;
     }
     .pin-input {
       letter-spacing: 12px;
-      font-size: 22px;
-      width: 140px;
+      font-size: 20px;
+      width: 130px;
       text-align: center;
       background: #1a1715;
       border: 1px solid #5a3d28;
@@ -460,40 +476,36 @@
         <button class="sticky-btn sticky-btn-green" data-color="note-green"></button>
       </div>
     </div>
-  </div>
 
-  <!-- Pro版案内モーダル -->
-  <div class="modal-overlay" id="pro-modal">
-    <div class="modal-card">
-      <h3>✨ Pro版限定機能</h3>
-      <p>無料版で作成できるボードは3枚までです。<br>Pro版にアップグレードするとボードが無制限に作れます。</p>
-      <button class="modal-btn" onclick="alert('Pro版決済フロー（準備中）')">Pro版をアンロック (¥1,200)</button>
-      <button class="modal-btn-close" onclick="document.getElementById('pro-modal').style.display='none'">閉じる</button>
+    <!-- Pro版案内モーダル（コンテナ内に格納して正方向回転） -->
+    <div class="modal-overlay" id="pro-modal">
+      <div class="modal-card">
+        <h3>✨ Pro版限定機能</h3>
+        <p>無料版で作成できるボードは3枚までです。<br>Pro版にアップグレードすると無制限にボードを作成できます。</p>
+        <button class="modal-btn" onclick="alert('Pro版決済フロー（準備中）')">Pro版をアンロック (¥1,200)</button>
+        <button class="modal-btn-close" id="btn-close-pro">閉じる</button>
+      </div>
     </div>
-  </div>
 
-  <!-- パスコード入力モーダル -->
-  <div class="modal-overlay" id="passcode-modal">
-    <div class="modal-card">
-      <h3>🔒 シークレットロック</h3>
-      <p>このボードを開くには4桁の暗証番号を入力してください。<br><small>(初期値: 1234)</small></p>
-      <input type="password" id="passcode-input" class="pin-input" maxlength="4" inputmode="numeric">
-      <button class="modal-btn" id="btn-unlock">解除</button>
-      <button class="modal-btn-close" id="btn-cancel-unlock">キャンセル</button>
+    <!-- パスコード入力モーダル（コンテナ内に格納して正方向回転） -->
+    <div class="modal-overlay" id="passcode-modal">
+      <div class="modal-card">
+        <h3>🔒 シークレットロック</h3>
+        <p>このボードを開くには4桁の暗証番号を入力してください。<br><small>(初期値: 1234)</small></p>
+        <input type="password" id="passcode-input" class="pin-input" maxlength="4" inputmode="numeric">
+        <button class="modal-btn" id="btn-unlock">解除</button>
+        <button class="modal-btn-close" id="btn-cancel-unlock">キャンセル</button>
+      </div>
     </div>
   </div>
 
   <input type="file" id="fileInput" accept="image/*" style="display: none;">
 
   <script>
-    // --- 触覚フィードバック（iPhoneのTaptic Engine振動） ---
     function triggerHaptic() {
-      if (navigator.vibrate) {
-        navigator.vibrate(15);
-      }
+      if (navigator.vibrate) navigator.vibrate(15);
     }
 
-    // --- 音声シンセ ---
     let audioCtx = null;
     function ensureAudio() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -550,7 +562,6 @@
       } catch (e) { }
     }
 
-    // --- IndexedDB ストレージ ---
     const DB_NAME = 'CorkboardAppDB';
     const STORE_NAME = 'boards';
     let db;
@@ -609,7 +620,6 @@
       });
     }
 
-    // --- ボード管理 ＆ ロック機能 ---
     let boards = JSON.parse(localStorage.getItem('corkboard_tabs')) || [
       { id: 'daily', title: '📅 デイリー予定' },
       { id: 'favorite', title: '✨ お気に入り' },
@@ -633,7 +643,7 @@
           ${boards.length > 1 ? `<span class="tab-close" title="シートを削除">×</span>` : ''}
         `;
 
-        tab.addEventListener('click', (e) => {
+        const selectTabHandler = (e) => {
           if (e.target.classList.contains('tab-close')) {
             e.stopPropagation();
             if (confirm(`「${b.title}」を削除しますか？`)) deleteBoard(b.id);
@@ -649,8 +659,9 @@
               switchBoard(b.id);
             }
           }
-        });
+        };
 
+        tab.addEventListener('click', selectTabHandler);
         tabBar.insertBefore(tab, document.getElementById('btn-add-tab'));
       });
     }
@@ -660,19 +671,19 @@
       const input = document.getElementById('passcode-input');
       input.value = '';
       modal.style.display = 'flex';
-      setTimeout(() => input.focus(), 100);
+      setTimeout(() => input.focus(), 150);
     }
 
     document.getElementById('btn-unlock').addEventListener('click', () => {
       const pin = document.getElementById('passcode-input').value;
-      if (pin === '1234') { // 正解ピン
+      if (pin === '1234') {
         document.getElementById('passcode-modal').style.display = 'none';
         closeInspect();
         saveCurrentBoardData();
         switchBoard(pendingBoardId);
         pendingBoardId = null;
       } else {
-        alert('暗証番号が間違っています');
+        alert('暗証番号が違います');
         document.getElementById('passcode-input').value = '';
       }
     });
@@ -680,6 +691,10 @@
     document.getElementById('btn-cancel-unlock').addEventListener('click', () => {
       document.getElementById('passcode-modal').style.display = 'none';
       pendingBoardId = null;
+    });
+
+    document.getElementById('btn-close-pro').addEventListener('click', () => {
+      document.getElementById('pro-modal').style.display = 'none';
     });
 
     function switchBoard(id) {
@@ -698,7 +713,6 @@
       switchBoard(boards[0].id);
     }
 
-    // 無料版3枚制限チェック
     document.getElementById('btn-add-tab').addEventListener('click', () => {
       if (boards.length >= 3) {
         document.getElementById('pro-modal').style.display = 'flex';
@@ -834,7 +848,15 @@
     }
 
     const fileInput = document.getElementById('fileInput');
-    document.getElementById('btn-add-photo').addEventListener('click', () => fileInput.click());
+    const btnAddPhoto = document.getElementById('btn-add-photo');
+    
+    // タッチ・クリック両方で遅延なく即反応させる
+    const triggerFilePicker = (e) => {
+      e.preventDefault();
+      ensureAudio();
+      fileInput.click();
+    };
+    btnAddPhoto.addEventListener('click', triggerFilePicker);
 
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -842,6 +864,7 @@
         const rect = surface.getBoundingClientRect();
         addPhoto(file, rect.width / 2 - 68, rect.height / 2 - 75);
       }
+      fileInput.value = '';
     });
 
     surface.addEventListener('dragover', (e) => e.preventDefault());
@@ -873,7 +896,8 @@
     }
 
     document.querySelectorAll('.sticky-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
+      const addStickyHandler = (e) => {
+        e.preventDefault();
         playPinSound();
         const rect = surface.getBoundingClientRect();
         const note = createNoteElement({
@@ -889,7 +913,8 @@
         saveCurrentBoardData();
         const textarea = note.querySelector('.sticky-textarea');
         setTimeout(() => textarea.focus(), 50);
-      });
+      };
+      btn.addEventListener('click', addStickyHandler);
     });
 
     function setupCardInteraction(el) {
@@ -910,7 +935,7 @@
 
       el.querySelectorAll('textarea').forEach(input => {
         input.addEventListener('mousedown', (e) => e.stopPropagation());
-        input.addEventListener('touchstart', (e) => e.stopPropagation());
+        input.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
         input.addEventListener('input', () => saveCurrentBoardData());
       });
 
