@@ -5,14 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0">
   <title>Corkboard App</title>
   
-  <!-- PWA & iOS 縦向き最適化設定 -->
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Corkboard">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/889/889647.png">
 
-  <!-- フォント -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Yomogi&display=swap" rel="stylesheet">
@@ -23,7 +21,6 @@
       margin: 0; 
       padding: 0; 
       -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
     }
 
     html, body {
@@ -37,7 +34,7 @@
       position: fixed;
     }
 
-    /* 縦向き基準のアプリ枠 */
+    /* アプリ全体ラッパー（縦向き専用） */
     #app-container {
       width: 100%;
       height: 100%;
@@ -46,15 +43,24 @@
       justify-content: flex-start;
       align-items: center;
       padding-top: env(safe-area-inset-top, 6px);
-      padding-bottom: env(safe-area-inset-bottom, 8px);
-      padding-left: env(safe-area-inset-left, 6px);
-      padding-right: env(safe-area-inset-right, 6px);
+      padding-bottom: env(safe-area-inset-bottom, 12px);
+      padding-left: env(safe-area-inset-left, 8px);
+      padding-right: env(safe-area-inset-right, 8px);
+      position: relative;
+    }
+
+    /* 万一スマホを横向きに倒しても、縦向きレイアウトを無理に変形させない */
+    @media screen and (orientation: landscape) {
+      #app-container {
+        max-width: 440px;
+        margin: 0 auto;
+      }
     }
 
     /* タブバー */
     #tab-bar {
       display: flex;
-      gap: 5px;
+      gap: 6px;
       align-items: flex-end;
       width: 100%;
       padding: 0 4px;
@@ -64,6 +70,7 @@
       scrollbar-width: none;
       -webkit-overflow-scrolling: touch;
       flex-shrink: 0;
+      touch-action: pan-x;
     }
     #tab-bar::-webkit-scrollbar { display: none; }
 
@@ -76,10 +83,11 @@
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
       border: 1px solid #4d3321;
       border-bottom: none;
       flex-shrink: 0;
+      touch-action: manipulation;
     }
     .board-tab.active {
       background: #4d3321;
@@ -89,11 +97,11 @@
     }
 
     .tab-close {
-      font-size: 13px;
+      font-size: 14px;
       opacity: 0.6;
       border-radius: 50%;
-      width: 16px;
-      height: 16px;
+      width: 18px;
+      height: 18px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -104,15 +112,16 @@
       background: transparent;
       color: #8c7562;
       border: 1px dashed #4d3321;
-      padding: 7px 10px;
+      padding: 7px 12px;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 13px;
       flex-shrink: 0;
       margin-bottom: 2px;
+      touch-action: manipulation;
     }
 
-    /* 縦長ウッドフレーム */
+    /* 縦長コルクフレーム */
     #board-frame {
       position: relative;
       width: 100%;
@@ -127,7 +136,6 @@
       display: flex;
     }
 
-    /* コルク盤面 */
     #board-surface {
       position: relative;
       width: 100%;
@@ -163,59 +171,69 @@
       cursor: zoom-out;
     }
 
-    /* ツールバー */
+    /* ツールバー（横書き固定・押しやすいサイズ） */
     #toolbar {
       position: absolute;
-      bottom: 12px;
+      bottom: 14px;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
-      gap: 10px;
-      background: rgba(20, 18, 16, 0.94);
-      padding: 7px 16px;
-      border-radius: 26px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(8px);
-      z-index: 40000;
+      flex-direction: row;
       align-items: center;
+      gap: 12px;
+      background: rgba(26, 23, 21, 0.95);
+      padding: 8px 18px;
+      border-radius: 30px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 40000;
+      white-space: nowrap;
     }
 
     .tool-btn {
-      background: #38322e;
-      color: #eaeaea;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 7px 14px;
-      border-radius: 16px;
+      background: #423832;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 8px 14px;
+      border-radius: 18px;
       font-size: 13px;
+      font-weight: 500;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      touch-action: manipulation;
     }
-    .tool-btn:active { background: #55483f; }
+    .tool-btn:active { background: #5c4e45; }
 
     .sticky-color-group {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       border-left: 1px solid rgba(255,255,255,0.2);
-      padding-left: 10px;
+      padding-left: 12px;
       align-items: center;
+      flex-shrink: 0;
     }
-    .sticky-label { color: #bbb; font-size: 11px; }
+    .sticky-label { color: #ccc; font-size: 11px; white-space: nowrap; }
     .sticky-btn {
-      width: 22px;
-      height: 22px;
-      border-radius: 4px;
-      border: 1px solid rgba(255, 255, 255, 0.7);
+      width: 24px;
+      height: 24px;
+      border-radius: 5px;
+      border: 1.5px solid rgba(255, 255, 255, 0.8);
       cursor: pointer;
+      flex-shrink: 0;
+      touch-action: manipulation;
     }
-    .sticky-btn:active { transform: scale(0.9); }
+    .sticky-btn:active { transform: scale(0.88); }
     .sticky-btn-yellow { background-color: #fff59d; }
     .sticky-btn-pink   { background-color: #ffcdd2; }
     .sticky-btn-blue   { background-color: #b3e5fc; }
     .sticky-btn-green  { background-color: #c8e6c9; }
 
-    /* 写真カード（縦画面で2枚並びやすい130px幅） */
+    /* 写真カード（縦画面で2枚並べやすい130px） */
     .photo-card {
       position: absolute;
       width: 130px;
@@ -485,7 +503,6 @@
   <input type="file" id="fileInput" accept="image/*" style="display: none;">
 
   <script>
-    // --- 音声シンセ ---
     let audioCtx = null;
     function getAudioContext() {
       if (!audioCtx) {
@@ -548,7 +565,27 @@
       } catch (e) { }
     }
 
-    // --- IndexedDB ストレージ ---
+    // PWAで最速反応するポインタバインド
+    function bindFastClick(el, fn) {
+      let isMoved = false;
+      let startX = 0, startY = 0;
+      el.addEventListener('pointerdown', (e) => {
+        isMoved = false;
+        startX = e.clientX;
+        startY = e.clientY;
+      });
+      el.addEventListener('pointermove', (e) => {
+        if (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8) {
+          isMoved = true;
+        }
+      });
+      el.addEventListener('pointerup', (e) => {
+        if (!isMoved) {
+          fn(e);
+        }
+      });
+    }
+
     const DB_NAME = 'CorkboardAppDB';
     const STORE_NAME = 'boards';
     let db;
@@ -607,7 +644,6 @@
       });
     }
 
-    // --- ボード管理 ---
     let boards = JSON.parse(localStorage.getItem('corkboard_tabs')) || [
       { id: 'daily', title: '📅 デイリー予定' },
       { id: 'favorite', title: '✨ お気に入り' },
@@ -631,7 +667,7 @@
           ${boards.length > 1 ? `<span class="tab-close" title="削除">×</span>` : ''}
         `;
 
-        tab.addEventListener('click', (e) => {
+        bindFastClick(tab, (e) => {
           if (e.target.classList.contains('tab-close')) {
             e.stopPropagation();
             if (confirm(`「${b.title}」を削除しますか？`)) deleteBoard(b.id);
@@ -661,7 +697,7 @@
       setTimeout(() => input.focus(), 150);
     }
 
-    document.getElementById('btn-unlock').addEventListener('click', () => {
+    bindFastClick(document.getElementById('btn-unlock'), () => {
       const pin = document.getElementById('passcode-input').value;
       if (pin === '1234') {
         document.getElementById('passcode-modal').style.display = 'none';
@@ -675,12 +711,12 @@
       }
     });
 
-    document.getElementById('btn-cancel-unlock').addEventListener('click', () => {
+    bindFastClick(document.getElementById('btn-cancel-unlock'), () => {
       document.getElementById('passcode-modal').style.display = 'none';
       pendingBoardId = null;
     });
 
-    document.getElementById('btn-close-pro').addEventListener('click', () => {
+    bindFastClick(document.getElementById('btn-close-pro'), () => {
       document.getElementById('pro-modal').style.display = 'none';
     });
 
@@ -700,7 +736,7 @@
       switchBoard(boards[0].id);
     }
 
-    document.getElementById('btn-add-tab').addEventListener('click', () => {
+    bindFastClick(document.getElementById('btn-add-tab'), () => {
       if (boards.length >= 3) {
         document.getElementById('pro-modal').style.display = 'flex';
         return;
@@ -800,7 +836,7 @@
       currentlyInspectedCard = null;
     }
 
-    backdrop.addEventListener('click', closeInspect);
+    bindFastClick(backdrop, closeInspect);
 
     function createNoteElement(data) {
       const note = document.createElement('div');
@@ -837,7 +873,8 @@
     const fileInput = document.getElementById('fileInput');
     const btnAddPhoto = document.getElementById('btn-add-photo');
     
-    btnAddPhoto.addEventListener('click', () => {
+    // 写真追加ボタン：触れた瞬間にピッカー発火
+    bindFastClick(btnAddPhoto, () => {
       fileInput.click();
     });
 
@@ -879,7 +916,7 @@
     }
 
     document.querySelectorAll('.sticky-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
+      bindFastClick(btn, () => {
         playPinSound();
         const rect = surface.getBoundingClientRect();
         const note = createNoteElement({
@@ -904,7 +941,7 @@
       let isResizing = false;
       let startX, startY, initLeft, initTop, initWidth, initHeight, initRot, centerX, centerY, startAngle;
 
-      el.querySelector('.ctrl-delete').addEventListener('click', (e) => {
+      bindFastClick(el.querySelector('.ctrl-delete'), (e) => {
         e.stopPropagation();
         playPinSound();
         el.classList.add('removing');
