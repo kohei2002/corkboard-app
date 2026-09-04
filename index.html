@@ -5,14 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
   <title>Corkboard App</title>
   
-  <!-- PWA & iOS 設定 -->
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Corkboard">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/889/889647.png">
 
-  <!-- 手書き風フォント -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Yomogi&display=swap" rel="stylesheet">
@@ -20,56 +18,39 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
+    html, body {
+      width: 100%;
+      height: 100%;
+      background-color: #1a1715;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    /* アプリ全体ラッパー */
+    #app-container {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100vw;
       height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
       align-items: center;
-      background-color: #1a1715;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      user-select: none;
-      overflow: hidden;
-      padding-top: env(safe-area-inset-top, 4px);
-      padding-bottom: env(safe-area-inset-bottom, 4px);
-      padding-left: env(safe-area-inset-left, 8px);
-      padding-right: env(safe-area-inset-right, 8px);
+      padding: env(safe-area-inset-top, 4px) env(safe-area-inset-right, 8px) env(safe-area-inset-bottom, 4px) env(safe-area-inset-left, 8px);
+      transform-origin: center center;
     }
 
-    /* 縦向き時の案内画面 */
-    #orientation-warning {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: #1e1b18;
-      color: #eaeaea;
-      z-index: 999999;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      padding: 24px;
-    }
-    #orientation-warning .icon {
-      font-size: 44px;
-      margin-bottom: 12px;
-      animation: rotate-hint 1.8s infinite ease-in-out;
-    }
-    #orientation-warning h2 { font-size: 17px; margin-bottom: 6px; }
-    #orientation-warning p { font-size: 13px; color: #aaa; }
-
-    @keyframes rotate-hint {
-      0% { transform: rotate(0deg); }
-      50% { transform: rotate(-90deg); }
-      100% { transform: rotate(-90deg); }
-    }
-
+    /* 縦持ち時は全体を強制90度回転させて横長にフィットさせる */
     @media screen and (orientation: portrait) {
-      #orientation-warning { display: flex; }
+      #app-container {
+        width: 100vh !important;
+        height: 100vw !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) rotate(90deg) !important;
+      }
     }
 
     /* タブバー */
@@ -181,7 +162,7 @@
       cursor: zoom-out;
     }
 
-    /* ツールバー（コンパクト化） */
+    /* ツールバー */
     #toolbar {
       position: absolute;
       bottom: 8px;
@@ -231,7 +212,7 @@
     .sticky-btn-blue   { background-color: #b3e5fc; }
     .sticky-btn-green  { background-color: #c8e6c9; }
 
-    /* 写真カード（横画面スマホに最適化したスリム幅 135px） */
+    /* 写真カード */
     .photo-card {
       position: absolute;
       width: 135px;
@@ -255,7 +236,6 @@
       box-shadow: 10px 20px 30px rgba(0, 0, 0, 0.45);
     }
 
-    /* 拡大表示 */
     .photo-card.inspected {
       position: fixed !important;
       top: 50% !important;
@@ -305,7 +285,7 @@
     .caption-textarea:focus { background: rgba(0, 0, 0, 0.04); border-radius: 2px; }
     .caption-textarea::placeholder { color: #b0b0b0; font-size: 11px; }
 
-    /* 付箋（スリム化 125px） */
+    /* 付箋 */
     .sticky-note {
       position: absolute;
       width: 125px;
@@ -395,42 +375,125 @@
     .pin-metal { width: 13px; height: 13px; box-shadow: 1px 2px 4px rgba(0, 0, 0, 0.7); }
     .pin-silver { background: radial-gradient(circle at 40% 40%, #ffffff 0%, #b0bec5 50%, #455a64 100%); }
     .pin-gold { background: radial-gradient(circle at 40% 40%, #fff9c4 0%, #d4af37 55%, #6b4d1b 100%); }
+
+    /* モーダル共通（Pro案内 ＆ 暗証番号入力） */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100000;
+    }
+    .modal-card {
+      background: #2b2520;
+      border: 1px solid #5a3d28;
+      border-radius: 12px;
+      padding: 18px 24px;
+      width: 280px;
+      text-align: center;
+      color: #f0f0f0;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    }
+    .modal-card h3 { font-size: 15px; margin-bottom: 8px; }
+    .modal-card p { font-size: 12px; color: #bbb; margin-bottom: 14px; line-height: 1.4; }
+    .modal-btn {
+      background: #e65100;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 6px;
+    }
+    .modal-btn-close {
+      background: transparent;
+      border: none;
+      color: #888;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .pin-input {
+      letter-spacing: 12px;
+      font-size: 22px;
+      width: 140px;
+      text-align: center;
+      background: #1a1715;
+      border: 1px solid #5a3d28;
+      color: #fff;
+      padding: 6px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      outline: none;
+    }
   </style>
 </head>
 <body>
 
-  <!-- 縦向き警告 -->
-  <div id="orientation-warning">
-    <div class="icon">📱 ➔ 🔄</div>
-    <h2>画面を横向きにしてください</h2>
-    <p>コルクボードを広々とお使いいただくため、端末を横向きに回転させてください。</p>
+  <div id="app-container">
+    <!-- タブバー -->
+    <div id="tab-bar">
+      <button id="btn-add-tab" title="新しいシートを追加">＋ 新規</button>
+    </div>
+
+    <div id="board-frame">
+      <div id="board-surface"></div>
+      <div id="inspect-backdrop"></div>
+    </div>
+
+    <!-- ツールバー -->
+    <div id="toolbar">
+      <button class="tool-btn" id="btn-add-photo">📷 写真追加</button>
+      <div class="sticky-color-group">
+        <span class="sticky-label">付箋:</span>
+        <button class="sticky-btn sticky-btn-yellow" data-color="note-yellow"></button>
+        <button class="sticky-btn sticky-btn-pink" data-color="note-pink"></button>
+        <button class="sticky-btn sticky-btn-blue" data-color="note-blue"></button>
+        <button class="sticky-btn sticky-btn-green" data-color="note-green"></button>
+      </div>
+    </div>
   </div>
 
-  <!-- タブバー -->
-  <div id="tab-bar">
-    <button id="btn-add-tab" title="新しいシートを追加">＋ 新規</button>
+  <!-- Pro版案内モーダル -->
+  <div class="modal-overlay" id="pro-modal">
+    <div class="modal-card">
+      <h3>✨ Pro版限定機能</h3>
+      <p>無料版で作成できるボードは3枚までです。<br>Pro版にアップグレードするとボードが無制限に作れます。</p>
+      <button class="modal-btn" onclick="alert('Pro版決済フロー（準備中）')">Pro版をアンロック (¥1,200)</button>
+      <button class="modal-btn-close" onclick="document.getElementById('pro-modal').style.display='none'">閉じる</button>
+    </div>
   </div>
 
-  <div id="board-frame">
-    <div id="board-surface"></div>
-    <div id="inspect-backdrop"></div>
-  </div>
-
-  <!-- ツールバー -->
-  <div id="toolbar">
-    <button class="tool-btn" id="btn-add-photo">📷 写真追加</button>
-    <div class="sticky-color-group">
-      <span class="sticky-label">付箋:</span>
-      <button class="sticky-btn sticky-btn-yellow" data-color="note-yellow" title="黄色の付箋"></button>
-      <button class="sticky-btn sticky-btn-pink" data-color="note-pink" title="ピンクの付箋"></button>
-      <button class="sticky-btn sticky-btn-blue" data-color="note-blue" title="青色の付箋"></button>
-      <button class="sticky-btn sticky-btn-green" data-color="note-green" title="緑色の付箋"></button>
+  <!-- パスコード入力モーダル -->
+  <div class="modal-overlay" id="passcode-modal">
+    <div class="modal-card">
+      <h3>🔒 シークレットロック</h3>
+      <p>このボードを開くには4桁の暗証番号を入力してください。<br><small>(初期値: 1234)</small></p>
+      <input type="password" id="passcode-input" class="pin-input" maxlength="4" inputmode="numeric">
+      <button class="modal-btn" id="btn-unlock">解除</button>
+      <button class="modal-btn-close" id="btn-cancel-unlock">キャンセル</button>
     </div>
   </div>
 
   <input type="file" id="fileInput" accept="image/*" style="display: none;">
 
   <script>
+    // --- 触覚フィードバック（iPhoneのTaptic Engine振動） ---
+    function triggerHaptic() {
+      if (navigator.vibrate) {
+        navigator.vibrate(15);
+      }
+    }
+
+    // --- 音声シンセ ---
     let audioCtx = null;
     function ensureAudio() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -438,6 +501,7 @@
     }
 
     function playPinSound() {
+      triggerHaptic();
       try {
         ensureAudio();
         const t = audioCtx.currentTime;
@@ -468,6 +532,7 @@
     }
 
     function playUnpinSound() {
+      triggerHaptic();
       try {
         ensureAudio();
         const t = audioCtx.currentTime;
@@ -485,6 +550,7 @@
       } catch (e) { }
     }
 
+    // --- IndexedDB ストレージ ---
     const DB_NAME = 'CorkboardAppDB';
     const STORE_NAME = 'boards';
     let db;
@@ -543,10 +609,11 @@
       });
     }
 
+    // --- ボード管理 ＆ ロック機能 ---
     let boards = JSON.parse(localStorage.getItem('corkboard_tabs')) || [
       { id: 'daily', title: '📅 デイリー予定' },
       { id: 'favorite', title: '✨ お気に入り' },
-      { id: 'secret', title: '🔒 プライベート' }
+      { id: 'secret', title: '🔒 プライベート', isLocked: true }
     ];
     let currentBoardId = localStorage.getItem('corkboard_active_tab') || 'daily';
     let highestZIndex = 100;
@@ -554,6 +621,7 @@
     const tabBar = document.getElementById('tab-bar');
     const backdrop = document.getElementById('inspect-backdrop');
     let currentlyInspectedCard = null;
+    let pendingBoardId = null;
 
     function renderTabs() {
       document.querySelectorAll('.board-tab').forEach(t => t.remove());
@@ -572,15 +640,47 @@
             return;
           }
           if (currentBoardId !== b.id) {
-            closeInspect();
-            saveCurrentBoardData();
-            switchBoard(b.id);
+            if (b.isLocked) {
+              pendingBoardId = b.id;
+              openPasscodeModal();
+            } else {
+              closeInspect();
+              saveCurrentBoardData();
+              switchBoard(b.id);
+            }
           }
         });
 
         tabBar.insertBefore(tab, document.getElementById('btn-add-tab'));
       });
     }
+
+    function openPasscodeModal() {
+      const modal = document.getElementById('passcode-modal');
+      const input = document.getElementById('passcode-input');
+      input.value = '';
+      modal.style.display = 'flex';
+      setTimeout(() => input.focus(), 100);
+    }
+
+    document.getElementById('btn-unlock').addEventListener('click', () => {
+      const pin = document.getElementById('passcode-input').value;
+      if (pin === '1234') { // 正解ピン
+        document.getElementById('passcode-modal').style.display = 'none';
+        closeInspect();
+        saveCurrentBoardData();
+        switchBoard(pendingBoardId);
+        pendingBoardId = null;
+      } else {
+        alert('暗証番号が間違っています');
+        document.getElementById('passcode-input').value = '';
+      }
+    });
+
+    document.getElementById('btn-cancel-unlock').addEventListener('click', () => {
+      document.getElementById('passcode-modal').style.display = 'none';
+      pendingBoardId = null;
+    });
 
     function switchBoard(id) {
       currentBoardId = id;
@@ -598,7 +698,12 @@
       switchBoard(boards[0].id);
     }
 
+    // 無料版3枚制限チェック
     document.getElementById('btn-add-tab').addEventListener('click', () => {
+      if (boards.length >= 3) {
+        document.getElementById('pro-modal').style.display = 'flex';
+        return;
+      }
       const name = prompt('新しいシート名を入力してください:', '新しいボード');
       if (name && name.trim()) {
         const newId = 'board_' + Date.now();
