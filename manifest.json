@@ -1,0 +1,17 @@
+{
+  "name": "Corkboard",
+  "short_name": "Corkboard",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a1715",
+  "theme_color": "#1a1715",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/889/889647.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

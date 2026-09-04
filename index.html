@@ -5,12 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0">
   <title>Corkboard App</title>
   
+  <!-- PWA & iOS 縦向き最適化設定 -->
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Corkboard">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/889/889647.png">
 
+  <!-- フォント -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Yomogi&display=swap" rel="stylesheet">
@@ -21,6 +23,7 @@
       margin: 0; 
       padding: 0; 
       -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
 
     html, body {
@@ -34,7 +37,7 @@
       position: fixed;
     }
 
-    /* アプリ全体ラッパー：回転を廃止し画面いっぱいに自然展開 */
+    /* 縦向き基準のアプリ枠 */
     #app-container {
       width: 100%;
       height: 100%;
@@ -43,15 +46,15 @@
       justify-content: flex-start;
       align-items: center;
       padding-top: env(safe-area-inset-top, 6px);
-      padding-right: env(safe-area-inset-right, 8px);
       padding-bottom: env(safe-area-inset-bottom, 8px);
-      padding-left: env(safe-area-inset-left, 8px);
+      padding-left: env(safe-area-inset-left, 6px);
+      padding-right: env(safe-area-inset-right, 6px);
     }
 
     /* タブバー */
     #tab-bar {
       display: flex;
-      gap: 6px;
+      gap: 5px;
       align-items: flex-end;
       width: 100%;
       padding: 0 4px;
@@ -67,13 +70,13 @@
     .board-tab {
       background: #382e25;
       color: #b39b87;
-      padding: 8px 16px;
-      border-radius: 7px 7px 0 0;
+      padding: 8px 14px;
+      border-radius: 6px 6px 0 0;
       font-size: 13px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       border: 1px solid #4d3321;
       border-bottom: none;
       flex-shrink: 0;
@@ -86,11 +89,11 @@
     }
 
     .tab-close {
-      font-size: 14px;
+      font-size: 13px;
       opacity: 0.6;
       border-radius: 50%;
-      width: 18px;
-      height: 18px;
+      width: 16px;
+      height: 16px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -101,15 +104,15 @@
       background: transparent;
       color: #8c7562;
       border: 1px dashed #4d3321;
-      padding: 7px 12px;
+      padding: 7px 10px;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 12px;
       flex-shrink: 0;
       margin-bottom: 2px;
     }
 
-    /* コルクフレーム：画面全体にジャストフィット */
+    /* 縦長ウッドフレーム */
     #board-frame {
       position: relative;
       width: 100%;
@@ -124,6 +127,7 @@
       display: flex;
     }
 
+    /* コルク盤面 */
     #board-surface {
       position: relative;
       width: 100%;
@@ -192,7 +196,7 @@
 
     .sticky-color-group {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       border-left: 1px solid rgba(255,255,255,0.2);
       padding-left: 10px;
       align-items: center;
@@ -211,10 +215,10 @@
     .sticky-btn-blue   { background-color: #b3e5fc; }
     .sticky-btn-green  { background-color: #c8e6c9; }
 
-    /* 写真カード */
+    /* 写真カード（縦画面で2枚並びやすい130px幅） */
     .photo-card {
       position: absolute;
-      width: 135px;
+      width: 130px;
       padding: 6px 6px 8px 6px;
       background: #fdfdfd;
       border-radius: 2px;
@@ -240,7 +244,7 @@
       top: 50% !important;
       left: 50% !important;
       transform: translate(-50%, -50%) rotate(0deg) scale(1) !important;
-      width: min(80vw, 340px) !important;
+      width: min(85vw, 340px) !important;
       z-index: 60000 !important;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8) !important;
       cursor: zoom-out !important;
@@ -258,7 +262,7 @@
     .photo-card img {
       width: 100%;
       height: auto;
-      max-height: 260px;
+      max-height: 250px;
       object-fit: cover;
       display: block;
       pointer-events: none;
@@ -287,8 +291,8 @@
     /* 付箋 */
     .sticky-note {
       position: absolute;
-      width: 125px;
-      min-height: 115px;
+      width: 120px;
+      min-height: 110px;
       padding: 16px 8px 8px 8px;
       border-radius: 2px;
       cursor: grab;
@@ -355,7 +359,6 @@
     }
     .removing { pointer-events: none; animation: pin-out 0.22s ease-in forwards; }
 
-    /* ピン */
     .pin {
       position: absolute;
       top: 3px;
@@ -393,7 +396,7 @@
       background: #2b2520;
       border: 1px solid #5a3d28;
       border-radius: 12px;
-      padding: 18px 24px;
+      padding: 20px 24px;
       width: 280px;
       text-align: center;
       color: #f0f0f0;
@@ -482,6 +485,7 @@
   <input type="file" id="fileInput" accept="image/*" style="display: none;">
 
   <script>
+    // --- 音声シンセ ---
     let audioCtx = null;
     function getAudioContext() {
       if (!audioCtx) {
@@ -544,6 +548,7 @@
       } catch (e) { }
     }
 
+    // --- IndexedDB ストレージ ---
     const DB_NAME = 'CorkboardAppDB';
     const STORE_NAME = 'boards';
     let db;
@@ -602,6 +607,7 @@
       });
     }
 
+    // --- ボード管理 ---
     let boards = JSON.parse(localStorage.getItem('corkboard_tabs')) || [
       { id: 'daily', title: '📅 デイリー予定' },
       { id: 'favorite', title: '✨ お気に入り' },
@@ -734,10 +740,10 @@
       card.dataset.id = data.id || ('p_' + Date.now() + Math.random());
       card.dataset.rotation = data.rotation;
       card.dataset.pinClass = data.pinClass;
-      card.dataset.originalWidth = data.width || 135;
+      card.dataset.originalWidth = data.width || 130;
       card.style.left = `${data.left}px`;
       card.style.top = `${data.top}px`;
-      card.style.width = `${data.width || 135}px`;
+      card.style.width = `${data.width || 130}px`;
       card.style.zIndex = data.zIndex || ++highestZIndex;
       updateTransform(card);
 
@@ -788,7 +794,7 @@
       playPinSound();
       const card = currentlyInspectedCard;
       card.classList.remove('inspected');
-      card.style.width = card.dataset.originalWidth || '135px';
+      card.style.width = card.dataset.originalWidth || '130px';
       updateTransform(card);
       backdrop.classList.remove('active');
       currentlyInspectedCard = null;
@@ -839,7 +845,7 @@
       const file = e.target.files[0];
       if (file) {
         const rect = surface.getBoundingClientRect();
-        addPhoto(file, rect.width / 2 - 68, rect.height / 2 - 75);
+        addPhoto(file, rect.width / 2 - 65, rect.height / 2 - 75);
       }
       fileInput.value = '';
     });
@@ -850,7 +856,7 @@
       const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
       const rect = surface.getBoundingClientRect();
       files.forEach((file, index) => {
-        addPhoto(file, e.clientX - rect.left - 68 + (index * 16), e.clientY - rect.top - 75 + (index * 16));
+        addPhoto(file, e.clientX - rect.left - 65 + (index * 16), e.clientY - rect.top - 75 + (index * 16));
       });
     });
 
@@ -861,7 +867,7 @@
         createPhotoElement({
           left: Math.max(10, x),
           top: Math.max(10, y),
-          width: 135,
+          width: 130,
           rotation: getRandomRotation(),
           pinClass: getRandomPin(),
           imgSrc: event.target.result,
@@ -878,10 +884,10 @@
         const rect = surface.getBoundingClientRect();
         const note = createNoteElement({
           noteColor: btn.dataset.color,
-          left: rect.width / 2 - 62 + (Math.random() * 24 - 12),
-          top: rect.height / 2 - 58 + (Math.random() * 24 - 12),
-          width: 125,
-          height: 115,
+          left: rect.width / 2 - 60 + (Math.random() * 24 - 12),
+          top: rect.height / 2 - 55 + (Math.random() * 24 - 12),
+          width: 120,
+          height: 110,
           rotation: getRandomRotation(),
           pinClass: getRandomPin(),
           text: ''
@@ -962,12 +968,12 @@
           updateTransform(el);
         } else if (isResizing) {
           const deltaX = startX - pageX;
-          const newWidth = Math.min(380, Math.max(100, initWidth + deltaX));
+          const newWidth = Math.min(320, Math.max(90, initWidth + deltaX));
           el.style.width = `${newWidth}px`;
 
           if (el.classList.contains('sticky-note')) {
             const deltaY = pageY - startY;
-            const newHeight = Math.min(380, Math.max(90, initHeight + deltaY));
+            const newHeight = Math.min(320, Math.max(80, initHeight + deltaY));
             el.style.height = `${newHeight}px`;
           }
         } else if (isDragging) {
