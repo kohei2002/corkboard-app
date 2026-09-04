@@ -32,8 +32,10 @@
       user-select: none;
       -webkit-user-select: none;
       overflow: hidden;
+      position: fixed;
     }
 
+    /* アプリ全体ラッパー（横画面基準） */
     #app-container {
       position: absolute;
       top: 0;
@@ -48,37 +50,39 @@
       transform-origin: center center;
     }
 
+    /* 縦持ち時は90度回転＋画面幅に収まるよう自動スケールダウン（見切れ防止） */
     @media screen and (orientation: portrait) {
       #app-container {
+        /* 横持ち時のアスペクト比を保ったまま中央に回転配置 */
         width: 100vh !important;
         height: 100vw !important;
         top: 50% !important;
         left: 50% !important;
-        transform: translate(-50%, -50%) rotate(90deg) !important;
+        /* 幅(100vh)が縦画面の幅(100vw)に収まる比率で縮小 */
+        transform: translate(-50%, -50%) rotate(90deg) scale(calc(100vw / 100vh)) !important;
       }
     }
 
-    /* タブバー（タップ競合を排除） */
+    /* タブバー */
     #tab-bar {
       display: flex;
-      gap: 5px;
+      gap: 6px;
       align-items: flex-end;
       width: 100%;
-      padding-left: 8px;
+      padding-left: 10px;
       z-index: 100;
       overflow-x: auto;
       white-space: nowrap;
       scrollbar-width: none;
       -webkit-overflow-scrolling: touch;
-      touch-action: manipulation; /* スクロール誤爆によるタップ無効化を防止 */
     }
     #tab-bar::-webkit-scrollbar { display: none; }
 
     .board-tab {
       background: #382e25;
       color: #b39b87;
-      padding: 7px 16px;
-      border-radius: 6px 6px 0 0;
+      padding: 7px 18px;
+      border-radius: 7px 7px 0 0;
       font-size: 12px;
       cursor: pointer;
       display: inline-flex;
@@ -90,7 +94,7 @@
       touch-action: manipulation;
     }
     .board-tab:active {
-      background: #453629;
+      background: #4a3a2d;
     }
     .board-tab.active {
       background: #4d3321;
@@ -109,6 +113,7 @@
       align-items: center;
       justify-content: center;
       margin-left: 2px;
+      padding: 2px;
     }
 
     #btn-add-tab {
@@ -124,6 +129,7 @@
       touch-action: manipulation;
     }
 
+    /* コルクフレーム */
     #board-frame {
       position: relative;
       width: 100%;
@@ -173,6 +179,7 @@
       cursor: zoom-out;
     }
 
+    /* ツールバー */
     #toolbar {
       position: absolute;
       bottom: 8px;
@@ -180,7 +187,7 @@
       transform: translateX(-50%);
       display: flex;
       gap: 8px;
-      background: rgba(20, 18, 16, 0.92);
+      background: rgba(20, 18, 16, 0.94);
       padding: 5px 14px;
       border-radius: 24px;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
@@ -201,7 +208,7 @@
       align-items: center;
       gap: 4px;
     }
-    .tool-btn:active { background: #504640; }
+    .tool-btn:active { background: #55483f; }
 
     .sticky-color-group {
       display: flex;
@@ -224,6 +231,7 @@
     .sticky-btn-blue   { background-color: #b3e5fc; }
     .sticky-btn-green  { background-color: #c8e6c9; }
 
+    /* 写真カード */
     .photo-card {
       position: absolute;
       width: 135px;
@@ -296,6 +304,7 @@
     .caption-textarea:focus { background: rgba(0, 0, 0, 0.04); border-radius: 2px; }
     .caption-textarea::placeholder { color: #b0b0b0; font-size: 11px; }
 
+    /* 付箋 */
     .sticky-note {
       position: absolute;
       width: 125px;
@@ -329,6 +338,7 @@
     }
     .sticky-textarea::placeholder { color: rgba(0, 0, 0, 0.35); font-size: 11px; }
 
+    /* コントロール */
     .card-ctrl {
       position: absolute;
       width: 24px;
@@ -384,6 +394,7 @@
     .pin-silver { background: radial-gradient(circle at 40% 40%, #ffffff 0%, #b0bec5 50%, #455a64 100%); }
     .pin-gold { background: radial-gradient(circle at 40% 40%, #fff9c4 0%, #d4af37 55%, #6b4d1b 100%); }
 
+    /* モーダル */
     .modal-overlay {
       position: absolute;
       top: 0;
@@ -518,6 +529,18 @@
         gain.connect(ctx.destination);
         osc.start(t);
         osc.stop(t + 0.04);
+
+        const thud = ctx.createOscillator();
+        const thudGain = ctx.createGain();
+        thud.type = 'sine';
+        thud.frequency.setValueAtTime(220, t);
+        thud.frequency.exponentialRampToValueAtTime(40, t + 0.06);
+        thudGain.gain.setValueAtTime(0.4, t);
+        thudGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+        thud.connect(thudGain);
+        thudGain.connect(ctx.destination);
+        thud.start(t);
+        thud.stop(t + 0.06);
       } catch (e) { }
     }
 
@@ -540,36 +563,28 @@
       } catch (e) { }
     }
 
-    // タップ判定の許容閾値を設定（わずかな指のブレでキャンセルされない設計）
-    function bindInstantClick(element, handler) {
+    // ネイティブ並みの即時反応タップ判定（iOS PWAで最も安定するポインタ方式）
+    function bindFastTap(element, callback) {
+      let moved = false;
       let startX = 0;
       let startY = 0;
-      let moved = false;
 
-      element.addEventListener('touchstart', (e) => {
-        const touch = e.touches[0];
-        startX = touch.clientX;
-        startY = touch.clientY;
+      element.addEventListener('pointerdown', (e) => {
         moved = false;
-      }, { passive: true });
+        startX = e.clientX;
+        startY = e.clientY;
+      });
 
-      element.addEventListener('touchmove', (e) => {
-        const touch = e.touches[0];
-        // 8px以上の移動のみスクロールと判定
-        if (Math.abs(touch.clientX - startX) > 8 || Math.abs(touch.clientY - startY) > 8) {
+      element.addEventListener('pointermove', (e) => {
+        if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) {
           moved = true;
-        }
-      }, { passive: true });
-
-      element.addEventListener('touchend', (e) => {
-        if (!moved) {
-          e.preventDefault();
-          handler(e);
         }
       });
 
-      element.addEventListener('click', (e) => {
-        handler(e);
+      element.addEventListener('pointerup', (e) => {
+        if (!moved) {
+          callback(e);
+        }
       });
     }
 
@@ -654,7 +669,7 @@
           ${boards.length > 1 ? `<span class="tab-close" title="削除">×</span>` : ''}
         `;
 
-        bindInstantClick(tab, (e) => {
+        bindFastTap(tab, (e) => {
           if (e.target.classList.contains('tab-close')) {
             e.stopPropagation();
             if (confirm(`「${b.title}」を削除しますか？`)) deleteBoard(b.id);
@@ -684,7 +699,7 @@
       setTimeout(() => input.focus(), 150);
     }
 
-    bindInstantClick(document.getElementById('btn-unlock'), () => {
+    bindFastTap(document.getElementById('btn-unlock'), () => {
       const pin = document.getElementById('passcode-input').value;
       if (pin === '1234') {
         document.getElementById('passcode-modal').style.display = 'none';
@@ -698,12 +713,12 @@
       }
     });
 
-    bindInstantClick(document.getElementById('btn-cancel-unlock'), () => {
+    bindFastTap(document.getElementById('btn-cancel-unlock'), () => {
       document.getElementById('passcode-modal').style.display = 'none';
       pendingBoardId = null;
     });
 
-    bindInstantClick(document.getElementById('btn-close-pro'), () => {
+    bindFastTap(document.getElementById('btn-close-pro'), () => {
       document.getElementById('pro-modal').style.display = 'none';
     });
 
@@ -723,7 +738,7 @@
       switchBoard(boards[0].id);
     }
 
-    bindInstantClick(document.getElementById('btn-add-tab'), () => {
+    bindFastTap(document.getElementById('btn-add-tab'), () => {
       if (boards.length >= 3) {
         document.getElementById('pro-modal').style.display = 'flex';
         return;
@@ -823,7 +838,7 @@
       currentlyInspectedCard = null;
     }
 
-    bindInstantClick(backdrop, closeInspect);
+    bindFastTap(backdrop, closeInspect);
 
     function createNoteElement(data) {
       const note = document.createElement('div');
@@ -860,7 +875,8 @@
     const fileInput = document.getElementById('fileInput');
     const btnAddPhoto = document.getElementById('btn-add-photo');
     
-    bindInstantClick(btnAddPhoto, () => {
+    // 即時ピッカー起動
+    bindFastTap(btnAddPhoto, () => {
       fileInput.click();
     });
 
@@ -902,7 +918,7 @@
     }
 
     document.querySelectorAll('.sticky-btn').forEach(btn => {
-      bindInstantClick(btn, () => {
+      bindFastTap(btn, () => {
         playPinSound();
         const rect = surface.getBoundingClientRect();
         const note = createNoteElement({
@@ -927,7 +943,7 @@
       let isResizing = false;
       let startX, startY, initLeft, initTop, initWidth, initHeight, initRot, centerX, centerY, startAngle;
 
-      bindInstantClick(el.querySelector('.ctrl-delete'), (e) => {
+      bindFastTap(el.querySelector('.ctrl-delete'), (e) => {
         e.stopPropagation();
         playPinSound();
         el.classList.add('removing');
