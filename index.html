@@ -5,12 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0">
   <title>Corkboard App</title>
   
+  <!-- PWA & 完全縦向き固定設定 -->
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Corkboard">
+  <meta name="screen-orientation" content="portrait">
+  <meta name="x5-orientation" content="portrait">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/889/889647.png">
 
+  <!-- フォント -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Yomogi&display=swap" rel="stylesheet">
@@ -34,10 +38,10 @@
       position: fixed;
     }
 
-    /* アプリ全体ラッパー（縦向き専用） */
+    /* 縦向き専用ラッパー */
     #app-container {
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
@@ -46,14 +50,20 @@
       padding-bottom: env(safe-area-inset-bottom, 12px);
       padding-left: env(safe-area-inset-left, 8px);
       padding-right: env(safe-area-inset-right, 8px);
-      position: relative;
+      position: absolute;
+      top: 0;
+      left: 0;
     }
 
-    /* 万一スマホを横向きに倒しても、縦向きレイアウトを無理に変形させない */
+    /* スマホが物理的に横に倒された場合：逆回転させて縦画面の比率・表示を強制維持 */
     @media screen and (orientation: landscape) {
       #app-container {
-        max-width: 440px;
-        margin: 0 auto;
+        width: 100vh !important;
+        height: 100vw !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) rotate(-90deg) !important;
+        transform-origin: center center;
       }
     }
 
@@ -171,7 +181,7 @@
       cursor: zoom-out;
     }
 
-    /* ツールバー（横書き固定・押しやすいサイズ） */
+    /* ツールバー（ピル型スマートデザイン） */
     #toolbar {
       position: absolute;
       bottom: 14px;
@@ -565,8 +575,8 @@
       } catch (e) { }
     }
 
-    // PWAで最速反応するポインタバインド
-    function bindFastClick(el, fn) {
+    // 触れた瞬間に即時実行する最速タップバインド
+    function bindInstantAction(el, fn) {
       let isMoved = false;
       let startX = 0, startY = 0;
       el.addEventListener('pointerdown', (e) => {
@@ -575,12 +585,13 @@
         startY = e.clientY;
       });
       el.addEventListener('pointermove', (e) => {
-        if (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8) {
+        if (Math.abs(e.clientX - startX) > 6 || Math.abs(e.clientY - startY) > 6) {
           isMoved = true;
         }
       });
       el.addEventListener('pointerup', (e) => {
         if (!isMoved) {
+          e.preventDefault();
           fn(e);
         }
       });
@@ -667,7 +678,7 @@
           ${boards.length > 1 ? `<span class="tab-close" title="削除">×</span>` : ''}
         `;
 
-        bindFastClick(tab, (e) => {
+        bindInstantAction(tab, (e) => {
           if (e.target.classList.contains('tab-close')) {
             e.stopPropagation();
             if (confirm(`「${b.title}」を削除しますか？`)) deleteBoard(b.id);
@@ -697,7 +708,7 @@
       setTimeout(() => input.focus(), 150);
     }
 
-    bindFastClick(document.getElementById('btn-unlock'), () => {
+    bindInstantAction(document.getElementById('btn-unlock'), () => {
       const pin = document.getElementById('passcode-input').value;
       if (pin === '1234') {
         document.getElementById('passcode-modal').style.display = 'none';
@@ -711,12 +722,12 @@
       }
     });
 
-    bindFastClick(document.getElementById('btn-cancel-unlock'), () => {
+    bindInstantAction(document.getElementById('btn-cancel-unlock'), () => {
       document.getElementById('passcode-modal').style.display = 'none';
       pendingBoardId = null;
     });
 
-    bindFastClick(document.getElementById('btn-close-pro'), () => {
+    bindInstantAction(document.getElementById('btn-close-pro'), () => {
       document.getElementById('pro-modal').style.display = 'none';
     });
 
@@ -736,7 +747,7 @@
       switchBoard(boards[0].id);
     }
 
-    bindFastClick(document.getElementById('btn-add-tab'), () => {
+    bindInstantAction(document.getElementById('btn-add-tab'), () => {
       if (boards.length >= 3) {
         document.getElementById('pro-modal').style.display = 'flex';
         return;
@@ -836,7 +847,7 @@
       currentlyInspectedCard = null;
     }
 
-    bindFastClick(backdrop, closeInspect);
+    bindInstantAction(backdrop, closeInspect);
 
     function createNoteElement(data) {
       const note = document.createElement('div');
@@ -873,8 +884,8 @@
     const fileInput = document.getElementById('fileInput');
     const btnAddPhoto = document.getElementById('btn-add-photo');
     
-    // 写真追加ボタン：触れた瞬間にピッカー発火
-    bindFastClick(btnAddPhoto, () => {
+    // 写真追加ボタン
+    bindInstantAction(btnAddPhoto, () => {
       fileInput.click();
     });
 
@@ -916,7 +927,7 @@
     }
 
     document.querySelectorAll('.sticky-btn').forEach(btn => {
-      bindFastClick(btn, () => {
+      bindInstantAction(btn, () => {
         playPinSound();
         const rect = surface.getBoundingClientRect();
         const note = createNoteElement({
@@ -941,7 +952,7 @@
       let isResizing = false;
       let startX, startY, initLeft, initTop, initWidth, initHeight, initRot, centerX, centerY, startAngle;
 
-      bindFastClick(el.querySelector('.ctrl-delete'), (e) => {
+      bindInstantAction(el.querySelector('.ctrl-delete'), (e) => {
         e.stopPropagation();
         playPinSound();
         el.classList.add('removing');
