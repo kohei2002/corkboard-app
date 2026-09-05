@@ -79,12 +79,19 @@
       border: 1px solid #4d3321;
       border-bottom: none;
       flex-shrink: 0;
+      touch-action: pan-x;
+      transition: transform 0.15s ease, opacity 0.15s ease;
     }
     .board-tab.active {
       background: #4d3321;
       color: #fff;
       font-weight: bold;
       padding-top: 9px;
+    }
+    .board-tab.tab-dragging {
+      opacity: 0.65;
+      transform: scale(0.96);
+      background: #5a3e29;
     }
 
     .tab-close {
@@ -349,7 +356,7 @@
     .pin-silver { background: radial-gradient(circle at 40% 40%, #ffffff 0%, #b0bec5 50%, #455a64 100%); }
     .pin-gold { background: radial-gradient(circle at 40% 40%, #fff9c4 0%, #d4af37 55%, #6b4d1b 100%); }
 
-    /* 2本指ズーム対応・画像ビューアーモーダル */
+    /* 2本指ズーム・境界制限付き画像ビューアー */
     #viewer-modal {
       position: fixed;
       top: 0;
@@ -363,19 +370,19 @@
       align-items: center;
       z-index: 80000;
       touch-action: none;
+      overflow: hidden;
     }
     #viewer-container {
       position: relative;
-      max-width: 90vw;
-      max-height: 85vh;
       display: flex;
       justify-content: center;
       align-items: center;
+      transform-origin: center center;
       will-change: transform;
     }
     #viewer-img {
-      max-width: 88vw;
-      max-height: 75vh;
+      max-width: 86vw;
+      max-height: 72vh;
       object-fit: contain;
       box-shadow: 0 20px 60px rgba(0,0,0,0.9);
       border-radius: 4px;
@@ -483,7 +490,6 @@
     </div>
   </div>
 
-  <!-- 2本指ピンチズーム対応ビューアー -->
   <div id="viewer-modal">
     <div id="viewer-close-btn">×</div>
     <div id="viewer-container">
@@ -656,55 +662,104 @@
     const tabBar = document.getElementById('tab-bar');
     let pendingBoardId = null;
 
+    // --- シート（タブ）の並び替え・管理 ---
     function renderTabs() {
       document.querySelectorAll('.board-tab').forEach(t => t.remove());
-      boards.forEach(b => {
+      boards.forEach((b, index) => {
         const tab = document.createElement('div');
         tab.className = `board-tab ${b.id === currentBoardId ? 'active' : ''}`;
+        tab.dataset.id = b.id;
+        tab.dataset.index = index;
         tab.innerHTML = `
           <span class="tab-title">${b.title}</span>
           ${boards.length > 1 ? `<span class="tab-close" title="削除">×</span>` : ''}
         `;
 
-        // 長押しでシート名変更
-        let pressTimer = null;
-        tab.addEventListener('touchstart', (e) => {
-          pressTimer = setTimeout(() => {
-            renameBoard(b.id);
-          }, 600);
-        }, { passive: true });
-        tab.addEventListener('touchend', () => clearTimeout(pressTimer));
-        tab.addEventListener('touchmove', () => clearTimeout(pressTimer));
-
-        // ダブルクリックでもシート名変更可能
-        tab.addEventListener('dblclick', (e) => {
-          if (!e.target.classList.contains('tab-close')) {
-            renameBoard(b.id);
-          }
-        });
-
-        bindInstantAction(tab, (e) => {
-          if (e.target.classList.contains('tab-close')) {
-            e.stopPropagation();
-            if (confirm(`「${b.title}」を削除しますか？`)) deleteBoard(b.id);
-            return;
-          }
-          if (currentBoardId !== b.id) {
-            if (b.isLocked) {
-              pendingBoardId = b.id;
-              openPasscodeModal();
-            } else {
-              saveCurrentBoardData();
-              switchBoard(b.id);
-            }
-          }
-        });
-
+        setupTabDragAndReorder(tab, b);
         tabBar.insertBefore(tab, document.getElementById('btn-add-tab'));
       });
     }
 
-    // シート名称変更
+    // タブのドラッグ並び替え ＆ 長押し名称変更
+    function setupTabDragAndReorder(tab, board) {
+      let pressTimer = null;
+      let isDraggingTab = false;
+      let startX = 0;
+      let movedX = 0;
+
+      tab.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+        movedX = 0;
+        isDraggingTab = false;
+
+        pressTimer = setTimeout(() => {
+          renameBoard(board.id);
+        }, 650);
+      }, { passive: true });
+
+      tab.addEventListener('touchmove', (e) => {
+        const currentX = e.touches[0].clientX;
+        movedX = currentX - startX;
+
+        if (Math.abs(movedX) > 10) {
+          clearTimeout(pressTimer);
+          if (!isDraggingTab) {
+            isDraggingTab = true;
+            tab.classList.add('tab-dragging');
+          }
+        }
+
+        if (isDraggingTab) {
+          tab.style.transform = `translateX(${movedX}px) scale(0.96)`;
+          const elementUnder = document.elementFromPoint(currentX, e.touches[0].clientY);
+          const targetTab = elementUnder ? elementUnder.closest('.board-tab') : null;
+
+          if (targetTab && targetTab !== tab) {
+            const fromIndex = parseInt(tab.dataset.index);
+            const toIndex = parseInt(targetTab.dataset.index);
+            if (!isNaN(fromIndex) && !isNaN(toIndex)) {
+              const movedItem = boards.splice(fromIndex, 1)[0];
+              boards.splice(toIndex, 0, movedItem);
+              localStorage.setItem('corkboard_tabs', JSON.stringify(boards));
+              renderTabs();
+            }
+          }
+        }
+      }, { passive: true });
+
+      tab.addEventListener('touchend', () => {
+        clearTimeout(pressTimer);
+        tab.classList.remove('tab-dragging');
+        tab.style.transform = '';
+
+        if (!isDraggingTab && Math.abs(movedX) < 8) {
+          // タップ処理
+          handleTabClick(board);
+        }
+        isDraggingTab = false;
+      });
+
+      tab.addEventListener('click', (e) => {
+        if (e.target.classList.contains('tab-close')) {
+          e.stopPropagation();
+          if (confirm(`「${board.title}」を削除しますか？`)) deleteBoard(board.id);
+          return;
+        }
+      });
+    }
+
+    function handleTabClick(board) {
+      if (currentBoardId !== board.id) {
+        if (board.isLocked) {
+          pendingBoardId = board.id;
+          openPasscodeModal();
+        } else {
+          saveCurrentBoardData();
+          switchBoard(board.id);
+        }
+      }
+    }
+
     function renameBoard(id) {
       const b = boards.find(item => item.id === id);
       if (!b) return;
@@ -759,7 +814,6 @@
       switchBoard(boards[0].id);
     }
 
-    // シート無制限追加
     bindInstantAction(document.getElementById('btn-add-tab'), () => {
       const name = prompt('新しいシート名を入力してください:', '新しいボード');
       if (name && name.trim()) {
@@ -823,7 +877,7 @@
       return card;
     }
 
-    // --- 2本指ピンチズーム・ビューアー制御 ---
+    // --- 拡大ビューアー（境界制御付きピンチ＆パン） ---
     const viewerModal = document.getElementById('viewer-modal');
     const viewerContainer = document.getElementById('viewer-container');
     const viewerImg = document.getElementById('viewer-img');
@@ -845,6 +899,7 @@
       vScale = 1;
       vPosX = 0;
       vPosY = 0;
+      viewerContainer.style.transition = 'none';
       applyViewerTransform();
       viewerModal.style.display = 'flex';
     }
@@ -855,6 +910,25 @@
       viewerImg.src = '';
     }
 
+    // 画面外への突き抜けを防ぐバウンダリ制限
+    function clampPosition() {
+      if (vScale <= 1) {
+        // 等倍以下の時は中央に固定（画面外へ飛び出さない）
+        vPosX = 0;
+        vPosY = 0;
+        return;
+      }
+      const rect = viewerImg.getBoundingClientRect();
+      const currentW = (rect.width / (vScale || 1)) * vScale;
+      const currentH = (rect.height / (vScale || 1)) * vScale;
+
+      const maxMoveX = Math.max(0, (currentW - window.innerWidth * 0.9) / 2);
+      const maxMoveY = Math.max(0, (currentH - window.innerHeight * 0.8) / 2);
+
+      vPosX = Math.min(maxMoveX, Math.max(-maxMoveX, vPosX));
+      vPosY = Math.min(maxMoveY, Math.max(-maxMoveY, vPosY));
+    }
+
     function applyViewerTransform() {
       viewerContainer.style.transform = `translate(${vPosX}px, ${vPosY}px) scale(${vScale})`;
     }
@@ -862,8 +936,8 @@
     bindInstantAction(viewerCloseBtn, closeViewer);
 
     viewerModal.addEventListener('touchstart', (e) => {
+      viewerContainer.style.transition = 'none';
       if (e.touches.length === 2) {
-        // ピンチズーム開始
         isPinching = true;
         isPanning = false;
         vStartDistance = Math.hypot(
@@ -872,13 +946,13 @@
         );
         vStartScale = vScale;
       } else if (e.touches.length === 1) {
-        // 1本指ドラッグ移動開始
-        isPanning = true;
-        isPinching = false;
-        vStartX = e.touches[0].clientX;
-        vStartY = e.touches[0].clientY;
-        vStartPosX = vPosX;
-        vStartPosY = vPosY;
+        if (vScale > 1) {
+          isPanning = true;
+          vStartX = e.touches[0].clientX;
+          vStartY = e.touches[0].clientY;
+          vStartPosX = vPosX;
+          vStartPosY = vPosY;
+        }
       }
     }, { passive: false });
 
@@ -891,14 +965,16 @@
         );
         if (vStartDistance > 0) {
           const factor = dist / vStartDistance;
-          vScale = Math.min(5, Math.max(0.7, vStartScale * factor));
+          vScale = Math.min(4.5, Math.max(0.8, vStartScale * factor));
+          clampPosition();
           applyViewerTransform();
         }
-      } else if (isPanning && e.touches.length === 1) {
+      } else if (isPanning && e.touches.length === 1 && vScale > 1) {
         const dx = e.touches[0].clientX - vStartX;
         const dy = e.touches[0].clientY - vStartY;
         vPosX = vStartPosX + dx;
         vPosY = vStartPosY + dy;
+        clampPosition();
         applyViewerTransform();
       }
     }, { passive: false });
@@ -907,26 +983,27 @@
       if (e.touches.length === 0) {
         isPinching = false;
         isPanning = false;
-        // 縮小しすぎた場合は等倍に戻す
-        if (vScale < 1) {
+        if (vScale <= 1) {
           vScale = 1;
           vPosX = 0;
           vPosY = 0;
-          viewerContainer.style.transition = 'transform 0.2s ease-out';
-          applyViewerTransform();
-          setTimeout(() => { viewerContainer.style.transition = 'none'; }, 200);
+        } else {
+          clampPosition();
         }
+        viewerContainer.style.transition = 'transform 0.22s ease-out';
+        applyViewerTransform();
       } else if (e.touches.length === 1) {
         isPinching = false;
-        isPanning = true;
-        vStartX = e.touches[0].clientX;
-        vStartY = e.touches[0].clientY;
-        vStartPosX = vPosX;
-        vStartPosY = vPosY;
+        if (vScale > 1) {
+          isPanning = true;
+          vStartX = e.touches[0].clientX;
+          vStartY = e.touches[0].clientY;
+          vStartPosX = vPosX;
+          vStartPosY = vPosY;
+        }
       }
     });
 
-    // 背景タップで閉じる
     viewerModal.addEventListener('click', (e) => {
       if (e.target === viewerModal) closeViewer();
     });
@@ -1130,7 +1207,6 @@
             updateTransform(el, 1);
             saveCurrentBoardData();
           } else {
-            // 写真を軽くタップしたときは拡大ビューアーを開く
             if (el.classList.contains('photo-card')) {
               const img = el.querySelector('img');
               if (img) openViewer(img.src);
