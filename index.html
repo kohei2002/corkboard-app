@@ -66,7 +66,7 @@
     }
     #tab-bar::-webkit-scrollbar { display: none; }
     #tab-bar.reordering {
-      overflow-x: hidden !important; /* 並び替え中は親スクロールを完全停止 */
+      overflow-x: hidden !important;
     }
 
     .board-tab {
@@ -93,10 +93,10 @@
       padding-top: 9px;
     }
     .board-tab.tab-dragging {
-      opacity: 0.88;
+      opacity: 0.92;
       transform: scale(1.08) translateY(-3px);
-      background: #6a4931 !important;
-      box-shadow: 0 6px 14px rgba(0,0,0,0.6);
+      background: #7a4f30 !important;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.65);
       z-index: 200;
     }
 
@@ -686,19 +686,13 @@
       });
     }
 
-    // 長押しでドラッグ並び替えモードへ移行（誤爆スクロール防止設計）
+    // 長押し＝並び替えのみ / ダブルタップ＝名称変更 に完全分離
     function setupTabInteraction(tab, board) {
       let holdTimer = null;
       let isDraggingMode = false;
       let startX = 0, startY = 0;
+      let lastTapTime = 0;
       let lastHoverIndex = -1;
-
-      // ダブルタップでシート名称変更
-      tab.addEventListener('dblclick', (e) => {
-        if (!e.target.classList.contains('tab-close')) {
-          renameBoard(board.id);
-        }
-      });
 
       tab.addEventListener('touchstart', (e) => {
         if (e.target.classList.contains('tab-close')) return;
@@ -706,7 +700,17 @@
         startY = e.touches[0].clientY;
         isDraggingMode = false;
 
-        // 0.4秒の長押しで並び替えモードを発動
+        // ダブルタップ判定（名称変更用）
+        const now = Date.now();
+        if (now - lastTapTime < 300) {
+          clearTimeout(holdTimer);
+          renameBoard(board.id);
+          lastTapTime = 0;
+          return;
+        }
+        lastTapTime = now;
+
+        // 0.4秒の長押しで「並び替えモード」に突入（名称変更は絶対に開かない）
         holdTimer = setTimeout(() => {
           isDraggingMode = true;
           tabBar.classList.add('reordering');
@@ -722,18 +726,15 @@
         const diffY = currentY - startY;
 
         if (!isDraggingMode) {
-          // 長押し前に指が動いた場合は通常のスクロールとみなして長押し解除
           if (Math.abs(diffX) > 8 || Math.abs(diffY) > 8) {
             clearTimeout(holdTimer);
           }
           return;
         }
 
-        // 並び替えモード中の動作
         e.preventDefault();
         tab.style.transform = `translateX(${diffX}px) scale(1.08) translateY(-3px)`;
 
-        // 現在指がいる位置のタブを検出
         const elem = document.elementFromPoint(currentX, currentY);
         const targetTab = elem ? elem.closest('.board-tab') : null;
 
@@ -761,7 +762,6 @@
           isDraggingMode = false;
           renderTabs();
         } else {
-          // 短いタップの場合はシート切り替え
           if (!e.target.classList.contains('tab-close')) {
             handleTabSwitch(board);
           }
