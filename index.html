@@ -49,25 +49,48 @@
       position: relative;
     }
 
-    /* タブバー */
+    /* タブヘッダー部：左端固定の追加ボタンとスクロールタブ */
+    #tab-header-wrapper {
+      display: flex;
+      align-items: flex-end;
+      width: 100%;
+      height: 38px;
+      z-index: 100;
+      flex-shrink: 0;
+      gap: 6px;
+    }
+
+    #btn-add-tab {
+      background: #423528;
+      color: #dfcaa7;
+      border: 1px dashed #755239;
+      border-bottom: none;
+      padding: 7px 12px;
+      border-radius: 6px 6px 0 0;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 34px;
+    }
+    #btn-add-tab:active { background: #5a4533; }
+
     #tab-bar {
       display: flex;
       gap: 6px;
       align-items: flex-end;
-      width: 100%;
-      padding: 0 4px;
-      z-index: 100;
+      flex-grow: 1;
       overflow-x: auto;
       white-space: nowrap;
       scrollbar-width: none;
       -webkit-overflow-scrolling: touch;
-      flex-shrink: 0;
-      height: 38px;
+      height: 100%;
     }
     #tab-bar::-webkit-scrollbar { display: none; }
-    #tab-bar.reordering {
-      overflow-x: hidden !important;
-    }
+    #tab-bar.reordering { overflow-x: hidden !important; }
 
     .board-tab {
       background: #382e25;
@@ -85,12 +108,13 @@
       touch-action: pan-x;
       transition: transform 0.12s ease, opacity 0.12s ease, box-shadow 0.12s ease;
       position: relative;
+      height: 34px;
     }
     .board-tab.active {
       background: #4d3321;
       color: #fff;
       font-weight: bold;
-      padding-top: 9px;
+      height: 37px;
     }
     .board-tab.tab-dragging {
       opacity: 0.92;
@@ -110,18 +134,6 @@
       align-items: center;
       justify-content: center;
       margin-left: 2px;
-    }
-
-    #btn-add-tab {
-      background: transparent;
-      color: #8c7562;
-      border: 1px dashed #4d3321;
-      padding: 6px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
-      flex-shrink: 0;
-      margin-bottom: 2px;
     }
 
     /* コルクフレーム */
@@ -154,6 +166,7 @@
       background-position: 0 0, 0 0, 8px 8px, 15px 15px;
       box-shadow: inset 4px 4px 16px rgba(0,0,0,0.55);
       cursor: default;
+      touch-action: pan-y;
     }
 
     /* ツールバー */
@@ -306,7 +319,7 @@
     }
     .sticky-textarea::placeholder { color: rgba(0, 0, 0, 0.35); font-size: 11px; }
 
-    /* コントロール */
+    /* コントロールボタン群 */
     .card-ctrl {
       position: absolute;
       width: 24px;
@@ -330,6 +343,9 @@
 
     .ctrl-delete { top: -8px; right: -8px; background-color: #ef5350; }
     .ctrl-delete::before { content: '×'; }
+
+    .ctrl-copy { top: -8px; left: -8px; background-color: #ff9800; font-size: 12px; }
+    .ctrl-copy::before { content: '📋'; }
 
     .ctrl-rotate { bottom: -8px; right: -8px; background-color: #42a5f5; }
     .ctrl-rotate::before { content: '↻'; }
@@ -413,7 +429,7 @@
       z-index: 90000;
     }
 
-    /* パスコードモーダル */
+    /* コピー先シート選択モーダル ＆ パスコードモーダル */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -436,6 +452,8 @@
       text-align: center;
       color: #f0f0f0;
       box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      max-height: 80vh;
+      overflow-y: auto;
     }
     .modal-card h3 { font-size: 16px; margin-bottom: 8px; }
     .modal-card p { font-size: 13px; color: #bbb; margin-bottom: 14px; line-height: 1.4; }
@@ -472,13 +490,31 @@
       margin-bottom: 14px;
       outline: none;
     }
+    .copy-target-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .copy-target-item {
+      background: #3c3229;
+      color: #eee;
+      border: 1px solid #5a3d28;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: left;
+    }
+    .copy-target-item:active { background: #5a4533; }
   </style>
 </head>
 <body>
 
   <div id="app-container">
-    <div id="tab-bar">
-      <button id="btn-add-tab" title="新しいシートを追加">＋ 新規</button>
+    <div id="tab-header-wrapper">
+      <button id="btn-add-tab" title="新しいシートを追加">＋</button>
+      <div id="tab-bar"></div>
     </div>
 
     <div id="board-frame">
@@ -496,6 +532,7 @@
     </div>
   </div>
 
+  <!-- 拡大ビューアー -->
   <div id="viewer-modal">
     <div id="viewer-close-btn">×</div>
     <div id="viewer-container">
@@ -503,6 +540,17 @@
     </div>
   </div>
 
+  <!-- コピー先シート選択モーダル -->
+  <div class="modal-overlay" id="copy-modal">
+    <div class="modal-card">
+      <h3>📋 コピー先シートを選択</h3>
+      <p>コピー先のシートをタップしてください。</p>
+      <div class="copy-target-list" id="copy-target-list"></div>
+      <button class="modal-btn-close" id="btn-cancel-copy">キャンセル</button>
+    </div>
+  </div>
+
+  <!-- 暗証番号モーダル -->
   <div class="modal-overlay" id="passcode-modal">
     <div class="modal-card">
       <h3>🔒 シークレットロック</h3>
@@ -516,6 +564,11 @@
   <input type="file" id="fileInput" accept="image/*" style="display: none;">
 
   <script>
+    // iOS Safariの自動キャッシュ削除から守る（ストレージ永続化要請）
+    if (navigator.storage && navigator.storage.persist) {
+      navigator.storage.persist().catch(() => {});
+    }
+
     let audioCtx = null;
     function getAudioContext() {
       if (!audioCtx) {
@@ -599,7 +652,8 @@
       });
     }
 
-    const DB_NAME = 'CorkboardAppDB';
+    // --- IndexedDB + LocalStorage 二重永続化 ---
+    const DB_NAME = 'CorkboardAppDB_v2';
     const STORE_NAME = 'boards';
     let db;
 
@@ -607,17 +661,21 @@
       return new Promise((resolve) => {
         const req = indexedDB.open(DB_NAME, 1);
         req.onupgradeneeded = (e) => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains(STORE_NAME)) {
-            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          const database = e.target.result;
+          if (!database.objectStoreNames.contains(STORE_NAME)) {
+            database.createObjectStore(STORE_NAME, { keyPath: 'id' });
           }
         };
-        req.onsuccess = (e) => { db = e.target.result; resolve(); };
+        req.onsuccess = (e) => {
+          db = e.target.result;
+          resolve();
+        };
+        req.onerror = () => resolve();
       });
     }
 
     function saveCurrentBoardData() {
-      if (!db || !currentBoardId) return;
+      if (!currentBoardId) return;
       const items = [];
       document.querySelectorAll('.photo-card, .sticky-note').forEach(el => {
         const item = {
@@ -641,19 +699,52 @@
         items.push(item);
       });
 
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      tx.objectStore(STORE_NAME).put({
+      const boardObj = {
         id: currentBoardId,
         title: boards.find(b => b.id === currentBoardId)?.title || '無題',
         items: items
-      });
+      };
+
+      // 1. IndexedDB 保存
+      if (db) {
+        try {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.objectStore(STORE_NAME).put(boardObj);
+        } catch (e) { }
+      }
+
+      // 2. localStorage バックアップ二重保存（更新時の消滅完全防止）
+      try {
+        localStorage.setItem(`cb_backup_${currentBoardId}`, JSON.stringify(boardObj));
+      } catch (e) { }
     }
 
     function loadBoardData(boardId) {
       return new Promise((resolve) => {
-        const tx = db.transaction(STORE_NAME, 'readonly');
-        const req = tx.objectStore(STORE_NAME).get(boardId);
-        req.onsuccess = () => resolve(req.result ? req.result.items : []);
+        if (!db) {
+          const local = localStorage.getItem(`cb_backup_${boardId}`);
+          resolve(local ? JSON.parse(local).items : []);
+          return;
+        }
+        try {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const req = tx.objectStore(STORE_NAME).get(boardId);
+          req.onsuccess = () => {
+            if (req.result && req.result.items) {
+              resolve(req.result.items);
+            } else {
+              const local = localStorage.getItem(`cb_backup_${boardId}`);
+              resolve(local ? JSON.parse(local).items : []);
+            }
+          };
+          req.onerror = () => {
+            const local = localStorage.getItem(`cb_backup_${boardId}`);
+            resolve(local ? JSON.parse(local).items : []);
+          };
+        } catch (e) {
+          const local = localStorage.getItem(`cb_backup_${boardId}`);
+          resolve(local ? JSON.parse(local).items : []);
+        }
       });
     }
 
@@ -667,10 +758,10 @@
     const surface = document.getElementById('board-surface');
     const tabBar = document.getElementById('tab-bar');
     let pendingBoardId = null;
+    let copyingItemData = null;
 
-    // --- シート（タブ）管理 ---
     function renderTabs() {
-      document.querySelectorAll('.board-tab').forEach(t => t.remove());
+      tabBar.innerHTML = '';
       boards.forEach((b, index) => {
         const tab = document.createElement('div');
         tab.className = `board-tab ${b.id === currentBoardId ? 'active' : ''}`;
@@ -682,11 +773,16 @@
         `;
 
         setupTabInteraction(tab, b);
-        tabBar.insertBefore(tab, document.getElementById('btn-add-tab'));
+        tabBar.appendChild(tab);
       });
+
+      // アクティブなタブが見える位置に自動スクロール
+      const activeTab = tabBar.querySelector('.board-tab.active');
+      if (activeTab) {
+        activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
     }
 
-    // 長押し＝並び替えのみ / ダブルタップ＝名称変更 に完全分離
     function setupTabInteraction(tab, board) {
       let holdTimer = null;
       let isDraggingMode = false;
@@ -694,13 +790,18 @@
       let lastTapTime = 0;
       let lastHoverIndex = -1;
 
+      tab.addEventListener('dblclick', (e) => {
+        if (!e.target.classList.contains('tab-close')) {
+          renameBoard(board.id);
+        }
+      });
+
       tab.addEventListener('touchstart', (e) => {
         if (e.target.classList.contains('tab-close')) return;
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
         isDraggingMode = false;
 
-        // ダブルタップ判定（名称変更用）
         const now = Date.now();
         if (now - lastTapTime < 300) {
           clearTimeout(holdTimer);
@@ -710,7 +811,6 @@
         }
         lastTapTime = now;
 
-        // 0.4秒の長押しで「並び替えモード」に突入（名称変更は絶対に開かない）
         holdTimer = setTimeout(() => {
           isDraggingMode = true;
           tabBar.classList.add('reordering');
@@ -788,6 +888,43 @@
       }
     }
 
+    // --- 左右スワイプでシート切り替え ---
+    function setupSwipeNavigation() {
+      let swipeStartX = 0;
+      let swipeStartY = 0;
+      let isSwiping = false;
+
+      surface.addEventListener('touchstart', (e) => {
+        // カード本体以外（盤面）に触れた時のみスワイプを有効化
+        if (e.target === surface) {
+          swipeStartX = e.touches[0].clientX;
+          swipeStartY = e.touches[0].clientY;
+          isSwiping = true;
+        } else {
+          isSwiping = false;
+        }
+      }, { passive: true });
+
+      surface.addEventListener('touchend', (e) => {
+        if (!isSwiping) return;
+        const diffX = e.changedTouches[0].clientX - swipeStartX;
+        const diffY = e.changedTouches[0].clientY - swipeStartY;
+
+        // 横スワイプ（50px以上かつ縦ブレが少ない）
+        if (Math.abs(diffX) > 50 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
+          const currentIndex = boards.findIndex(b => b.id === currentBoardId);
+          if (diffX < 0 && currentIndex < boards.length - 1) {
+            // 右から左へスワイプ ➔ 次のシート
+            handleTabSwitch(boards[currentIndex + 1]);
+          } else if (diffX > 0 && currentIndex > 0) {
+            // 左から右へスワイプ ➔ 前のシート
+            handleTabSwitch(boards[currentIndex - 1]);
+          }
+        }
+        isSwiping = false;
+      }, { passive: true });
+    }
+
     function renameBoard(id) {
       const b = boards.find(item => item.id === id);
       if (!b) return;
@@ -837,11 +974,17 @@
     function deleteBoard(id) {
       boards = boards.filter(b => b.id !== id);
       localStorage.setItem('corkboard_tabs', JSON.stringify(boards));
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      tx.objectStore(STORE_NAME).delete(id);
+      if (db) {
+        try {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.objectStore(STORE_NAME).delete(id);
+        } catch (e) { }
+      }
+      localStorage.removeItem(`cb_backup_${id}`);
       switchBoard(boards[0].id);
     }
 
+    // 左端の「＋」ボタンでシート追加
     bindInstantAction(document.getElementById('btn-add-tab'), () => {
       const name = prompt('新しいシート名を入力してください:', '新しいボード');
       if (name && name.trim()) {
@@ -852,6 +995,64 @@
         switchBoard(newId);
       }
     });
+
+    // --- 別シートへのコピーモーダル制御 ---
+    const copyModal = document.getElementById('copy-modal');
+    const copyTargetList = document.getElementById('copy-target-list');
+
+    function openCopyModal(itemData) {
+      copyingItemData = itemData;
+      copyTargetList.innerHTML = '';
+      boards.forEach(b => {
+        if (b.id !== currentBoardId) {
+          const btn = document.createElement('div');
+          btn.className = 'copy-target-item';
+          btn.textContent = b.title;
+          btn.addEventListener('click', () => {
+            copyItemToBoard(b.id, copyingItemData);
+            copyModal.style.display = 'none';
+            playPinSound();
+            alert(`「${b.title}」へコピーしました`);
+          });
+          copyTargetList.appendChild(btn);
+        }
+      });
+      if (copyTargetList.children.length === 0) {
+        copyTargetList.innerHTML = '<div style="font-size:12px;color:#aaa;padding:8px;">コピー可能な他のシートがありません</div>';
+      }
+      copyModal.style.display = 'flex';
+    }
+
+    bindInstantAction(document.getElementById('btn-cancel-copy'), () => {
+      copyModal.style.display = 'none';
+      copyingItemData = null;
+    });
+
+    function copyItemToBoard(targetBoardId, item) {
+      loadBoardData(targetBoardId).then(existingItems => {
+        const newItem = JSON.parse(JSON.stringify(item));
+        newItem.id = (newItem.type === 'photo' ? 'p_' : 'n_') + Date.now() + Math.random();
+        newItem.left = Math.max(10, newItem.left + 15);
+        newItem.top = Math.max(10, newItem.top + 15);
+        existingItems.push(newItem);
+
+        const boardObj = {
+          id: targetBoardId,
+          title: boards.find(b => b.id === targetBoardId)?.title || '無題',
+          items: existingItems
+        };
+
+        if (db) {
+          try {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            tx.objectStore(STORE_NAME).put(boardObj);
+          } catch (e) { }
+        }
+        try {
+          localStorage.setItem(`cb_backup_${targetBoardId}`, JSON.stringify(boardObj));
+        } catch (e) { }
+      });
+    }
 
     const pinStyles = [
       'pin-round pin-red', 'pin-round pin-cyan', 'pin-round pin-yellow', 'pin-round pin-green',
@@ -887,6 +1088,7 @@
       card.innerHTML = `
         <div class="pin ${data.pinClass}"></div>
         <div class="card-ctrl ctrl-delete" title="削除"></div>
+        <div class="card-ctrl ctrl-copy" title="別シートにコピー"></div>
         <div class="card-ctrl ctrl-rotate" title="回転"></div>
         <div class="card-ctrl ctrl-resize" title="大きさ変更"></div>
         <div class="photo-img-wrapper">
@@ -901,6 +1103,23 @@
       const textarea = card.querySelector('.caption-textarea');
       autoResizeTextarea(textarea);
       textarea.addEventListener('input', () => autoResizeTextarea(textarea));
+
+      // コピーボタンバインド
+      bindInstantAction(card.querySelector('.ctrl-copy'), (e) => {
+        e.stopPropagation();
+        openCopyModal({
+          type: 'photo',
+          imgSrc: card.querySelector('img').src,
+          caption: card.querySelector('.caption-textarea').value,
+          left: card.offsetLeft,
+          top: card.offsetTop,
+          width: card.offsetWidth,
+          height: card.offsetHeight,
+          rotation: card.dataset.rotation,
+          pinClass: card.dataset.pinClass,
+          zIndex: parseInt(card.style.zIndex) || 100
+        });
+      });
 
       return card;
     }
@@ -1051,6 +1270,7 @@
       note.innerHTML = `
         <div class="pin ${data.pinClass}"></div>
         <div class="card-ctrl ctrl-delete" title="削除"></div>
+        <div class="card-ctrl ctrl-copy" title="別シートにコピー"></div>
         <div class="card-ctrl ctrl-rotate" title="回転"></div>
         <div class="card-ctrl ctrl-resize" title="大きさ変更"></div>
         <textarea class="sticky-textarea" placeholder="メモ...">${data.text || ''}</textarea>
@@ -1058,6 +1278,24 @@
 
       surface.appendChild(note);
       setupCardInteraction(note);
+
+      // コピーボタンバインド
+      bindInstantAction(note.querySelector('.ctrl-copy'), (e) => {
+        e.stopPropagation();
+        openCopyModal({
+          type: 'note',
+          noteColor: note.dataset.noteColor,
+          text: note.querySelector('.sticky-textarea').value,
+          left: note.offsetLeft,
+          top: note.offsetTop,
+          width: note.offsetWidth,
+          height: note.offsetHeight,
+          rotation: note.dataset.rotation,
+          pinClass: note.dataset.pinClass,
+          zIndex: parseInt(note.style.zIndex) || 100
+        });
+      });
+
       return note;
     }
 
@@ -1158,7 +1396,7 @@
 
       const onStart = (e) => {
         const target = e.target;
-        if (target.tagName.toLowerCase() === 'textarea') return;
+        if (target.tagName.toLowerCase() === 'textarea' || target.classList.contains('card-ctrl')) return;
 
         const pageX = e.touches ? e.touches[0].pageX : e.pageX;
         const pageY = e.touches ? e.touches[0].pageY : e.pageY;
@@ -1257,6 +1495,7 @@
 
     initDB().then(() => {
       renderTabs();
+      setupSwipeNavigation();
       switchBoard(currentBoardId);
     });
   </script>
